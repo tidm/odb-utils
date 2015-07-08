@@ -55,6 +55,7 @@ namespace oi
             void worker()
             {
                 T obj;
+                bool wait_res = false;
                 try
                 {
                     odb::core::transaction t(_db->begin());
@@ -63,10 +64,14 @@ namespace oi
                     auto last_commit = std::chrono::high_resolution_clock::now();
                     while(_state == state::READY)
                     {
-                        _sem.wait();
+                        wait_res = _sem.wait_for(100);
                         if(_state != state::READY)
                         {
                             break;
+                        }
+                        if(wait_res == false)
+                        {
+                            continue;
                         }
                         _que_gurad.lock();
                         {
@@ -100,7 +105,7 @@ namespace oi
                         }
                         catch(const odb::exception& ex)
                         {
-                            oi::exception ox(__FILE__, __FUNCTION__, (std::string("odb exception") + ex.what()).c_str());
+                            oi::exception ox(__FILE__, __FUNCTION__, (std::string("odb exception ") + ex.what()).c_str());
                             _stat_gurad.lock();
                             {
                                 _stat.update(0, false);
@@ -217,10 +222,7 @@ namespace oi
             {
                 if(_state == state::READY)
                 {
-                    for(int i=0; i< _init_param.pool_size; i++)
-                    {
-                        _sem.notify();
-                    }
+                    _state = state::TERMINATED;
                     for(int i=0; i< _init_param.pool_size; i++)
                     {
                         _worker_threads[i]->join();

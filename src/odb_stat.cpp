@@ -2,9 +2,9 @@
 namespace oi {
 std::ostream& operator<<(std::ostream& os, const odb_stat& od) {
     os << "fail: " << od._fail_count
-       << "que len: " << od._que_len
-       << "success: {";
-    os << operator<<(os, static_cast<stat_info>(od));
+       << " que len: " << od._que_len
+       << " success: {";
+    os << static_cast<stat_info>(od);
     os << "}";
     return os;
 }

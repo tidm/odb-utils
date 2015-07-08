@@ -5,11 +5,14 @@ oi::odb_worker<ns2__reg_agent_obj>  worker;
 void ex_handler(oi::exception ex, ns2__reg_agent_obj obj)
 {
     std::cerr << ex.what() << std::endl;
+   // throw ex;
 }
+bool finished;
 void get_stat()
 {
     oi::odb_stat st;
-    while(true)
+    st = worker.get_stat();
+    while(finished == false || st.get_que_len() > 0)
     {
         st = worker.get_stat();
         std::cerr << "\n========================\n" << st << std::endl;
@@ -18,12 +21,13 @@ void get_stat()
 }
 int main()
 {
+    finished = false;
     oi_database * db;
     db  = new oi_database("OI_TESTING", "ot", "10.0.0.111:1521/orcl");
 
     oi::odb_worker_param prm;
     prm.max_que_size = 3000000;
-    prm.pool_size = 10;
+    prm.pool_size = 2;
     prm.commit_count = 100;
     prm.commit_timeout = 1;
 
@@ -59,11 +63,14 @@ int main()
     reg_obj.magent_code = "26";
     reg_obj.funder_acct_id = "27";
 
+    std::thread th(&get_stat);
     for(int i=0; i< 500000; i++)
     {
         reg_obj.tx_id = reg_obj.tx_id++ ;
         worker.persist(reg_obj);
     }
-    sleep(3);
+    finished = true;
+    th.join();
+    worker.finalize();
     return 0;
 }
