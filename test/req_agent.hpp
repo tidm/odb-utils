@@ -1,7 +1,11 @@
 #ifndef REQ_AGENT_HPP
 #define REQ_AGENT_HPP
 #include<string>
+#include<ostream>
 #include<odb/core.hxx>
+
+
+
 struct ns2__reg_agent_obj
 {
     uint64_t tx_id ;//
@@ -33,6 +37,9 @@ struct ns2__reg_agent_obj
     std::string funder_acct_id;
 };
 #pragma db object(ns2__reg_agent_obj) no_id
+
+
+
 
 struct ns2__reg_customer_obj
 {

@@ -13,6 +13,7 @@
 #include <limits>
 #include <exception.hpp>
 
+#define  MAX_CONNECT_RETRY 3600
 #define  MAX_POOL_SIZE  100
 #define  MAX_COMMIT_TIMEOUT  60
 #define  MAX_COMMIT_COUNT  10000
@@ -55,11 +56,15 @@ namespace oi
             void worker()
             {
                 T obj;
+                std::vector<T> uncommited;
                 bool wait_res = false;
+                execution_state exec_state = execution_state::SUCCESS;
+                odb::core::transaction* trans = NULL;
                 try
                 {
-                    odb::core::transaction t(_db->begin());
+                    trans = new odb::core::transaction(_db->begin());
                     int commit_counter = 0;
+                    uint64_t diff_time = 0;
 
                     auto last_commit = std::chrono::high_resolution_clock::now();
                     while(_state == state::READY)
@@ -79,6 +84,7 @@ namespace oi
                             _que.pop();
                         }
                         _que_gurad.unlock();
+                        uncommited.push_back(obj);
                         try
                         {
                             auto start = std::chrono::high_resolution_clock::now(); 
@@ -89,34 +95,74 @@ namespace oi
                                     || 
                                     std::chrono::duration_cast<std::chrono::seconds>(start - last_commit).count() > _init_param.commit_timeout )
                             {
-                                t.commit();
-                                t.reset(_db->begin());
+                                trans->commit();
+                                uncommited.clear();
+                                trans->reset(_db->begin());
                                 commit_counter = 0;
                                 last_commit = start;
                             }
                             auto end = std::chrono::high_resolution_clock::now(); 
 
-                            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-                            _stat_gurad.lock();
+                            diff_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+                            exec_state = execution_state::SUCCESS;
+                        }
+                        catch(const odb::recoverable & e)
+                        {
+                            int retry_count =0;
+                            while(retry_count < MAX_CONNECT_RETRY)
                             {
-                                _stat.update( diff , true);
+                                std::cerr << "******\nretrying..." << retry_count << std::endl;
+                                try
+                                {
+                                    delete trans;
+                                    trans = new odb::core::transaction(_db->begin());
+                                    std::cerr << "******\nconnected..." << retry_count << std::endl;
+                                    break;
+                                }
+                                catch(...){
+                                    std::cerr << "******\nfialed..." << retry_count << std::endl;
+                                }
+                                sleep(1);
+                                retry_count++;
                             }
-                            _stat_gurad.unlock();
+                            if(retry_count >= MAX_CONNECT_RETRY)
+                            {
+                                oi::exception ox(__FILE__, __FUNCTION__, " maximum no of connection retries exceeded");
+                                _exception_handler(ox , obj); 
+                                continue;
+                            }
+                            typename std::vector<T>::iterator it;
+                            _que_gurad.lock();
+                            {
+                                for(it= uncommited.begin(); it != uncommited.end(); it++)
+                                {
+                                    _que.push(*it);
+                                    _sem.notify();
+                                }
+                                uncommited.clear();
+                            }
+                            _que_gurad.unlock();
+                            exec_state = execution_state::RECOVERED;
+                            diff_time = 0;
                         }
                         catch(const odb::exception& ex)
                         {
-                            oi::exception ox(__FILE__, __FUNCTION__, (std::string("odb exception ") + ex.what()).c_str());
-                            _stat_gurad.lock();
-                            {
-                                _stat.update(0, false);
-                            }
-                            _stat_gurad.unlock();
+                            oi::exception ox("odb", "exception", ex.what());
+                             ox.add_msg(__FILE__, __FUNCTION__, "unhandled odb exception");
+                            exec_state = execution_state::FAILED;
+                            diff_time = 0;
                             _exception_handler(ox, obj);
+
                         }
+                        _stat_gurad.lock();
+                        {
+                            _stat.update(diff_time, exec_state);
+                        }
+                        _stat_gurad.unlock();
                     }
                     try
                     {
-                        t.commit();
+                        trans->commit();
                     }
                     catch(const odb::exception& ex)
                     {

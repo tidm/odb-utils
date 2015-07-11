@@ -1,6 +1,68 @@
 #include "req_agent.hpp"
 #include "req_agent_odb.hpp"
 #include "../src/odb_worker.hpp"
+std::ostream& operator<<(std::ostream & os, const ns2__reg_agent_obj & obj)
+{
+
+    //os << " tx_id " << obj.tx_id ;
+    //os << " tx_type " << obj.tx_type ;
+    //os << " hypertag_id " << obj.hypertag_id ;
+    //os << " bank_code " << obj.bank_code ;
+    //os << " agent_code " << obj.agent_code ;
+    //os << " cif_id " << obj.cif_id ;
+    //os << " acc_id " << obj.acc_id ;
+    //os << " acc_type " << obj.acc_type ;
+    //os << " net_operator " << obj.net_operator ;
+    //os << " phone " << obj.phone ;
+    //os << " home_currency " << obj.home_currency ;
+    //os << " home_country " << obj.home_country ;
+    //os << " home_province " << obj.home_province ;
+    //os << " home_region " << obj.home_region ;
+    //os << " home_city " << obj.home_city ;
+    //os << " home_township " << obj.home_township ;
+    //os << " date_birth " << obj.date_birth ;
+    //os << " id_type " << obj.id_type ;
+    //os << " id_no " << obj.id_no ;
+    //os << " gender " << obj.gender ;
+    //os << " occupation " << obj.occupation ;
+    //os << " home_branch " << obj.home_branch ;
+    //os << " service_plan " << obj.service_plan ;
+    //os << " signup_loc " << obj.signup_loc ;
+    //os << " signup_date " << obj.signup_date ;
+    //os << " magent_code " << obj.magent_code ;
+    //os << " funder_acct_id " << obj.funder_acct_id ;
+
+
+
+    os << " " << obj.tx_id ;
+    os << " " << obj.tx_type ;
+    os << " " << obj.hypertag_id ;
+    os << " " << obj.bank_code ;
+    os << " " << obj.agent_code ;
+    os << " " << obj.cif_id ;
+    os << " " << obj.acc_id ;
+    os << " " << (int)obj.acc_type ;
+    os << " " << obj.net_operator ;
+    os << " " << obj.phone ;
+    os << " " << obj.home_currency ;
+    os << " " << obj.home_country ;
+    os << " " << obj.home_province ;
+    os << " " << obj.home_region ;
+    os << " " << obj.home_city ;
+    os << " " << obj.home_township ;
+    os << " " << obj.date_birth ;
+    os << " " << (int)obj.id_type ;
+    os << " " << obj.id_no ;
+    os << " " << obj.gender ;
+    os << " " << (int)obj.occupation ;
+    os << " " << obj.home_branch ;
+    os << " " << obj.service_plan ;
+    os << " " << obj.signup_loc ;
+    os << " " << obj.signup_date ;
+    os << " " << obj.magent_code ;
+    os << " " << obj.funder_acct_id ;
+    return os;
+}
 oi::odb_worker<ns2__reg_agent_obj>  worker;
 void ex_handler(oi::exception ex, ns2__reg_agent_obj obj)
 {
@@ -26,9 +88,9 @@ int main()
     db  = new oi_database("OI_TESTING", "ot", "10.0.0.111:1521/orcl");
 
     oi::odb_worker_param prm;
-    prm.max_que_size = 3000000;
-    prm.pool_size = 2;
-    prm.commit_count = 100;
+    prm.max_que_size = 30000000;
+    prm.pool_size = 20;
+    prm.commit_count = 1000;
     prm.commit_timeout = 1;
 
     std::function<void(oi::exception, const ns2__reg_agent_obj&)> f= & ex_handler;
@@ -52,7 +114,7 @@ int main()
     reg_obj.home_city = "15";
     reg_obj.home_township = "16";
     reg_obj.date_birth = "17";
-    reg_obj.id_type = std::rand() % 10618;
+    reg_obj.id_type = std::rand() % 10;
     reg_obj.id_no = "19";
     reg_obj.gender = "20";
     reg_obj.occupation = 21;
@@ -64,7 +126,7 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 500000; i++)
+    for(int i=0; i< 10000000; i++)
     {
         reg_obj.tx_id = reg_obj.tx_id++ ;
         worker.persist(reg_obj);
