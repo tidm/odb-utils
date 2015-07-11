@@ -111,16 +111,13 @@ namespace oi
                             int retry_count =0;
                             while(retry_count < MAX_CONNECT_RETRY)
                             {
-                                std::cerr << "******\nretrying..." << retry_count << std::endl;
                                 try
                                 {
                                     delete trans;
                                     trans = new odb::core::transaction(_db->begin());
-                                    std::cerr << "******\nconnected..." << retry_count << std::endl;
                                     break;
                                 }
                                 catch(...){
-                                    std::cerr << "******\nfialed..." << retry_count << std::endl;
                                 }
                                 sleep(1);
                                 retry_count++;

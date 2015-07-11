@@ -88,8 +88,8 @@ int main()
     db  = new oi_database("OI_TESTING", "ot", "10.0.0.111:1521/orcl");
 
     oi::odb_worker_param prm;
-    prm.max_que_size = 30000000;
-    prm.pool_size = 20;
+    prm.max_que_size = 3000000;
+    prm.pool_size = 5;
     prm.commit_count = 1000;
     prm.commit_timeout = 1;
 
@@ -126,10 +126,11 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 10000000; i++)
+    for(int i=0; i< 1000000; i++)
     {
         reg_obj.tx_id = reg_obj.tx_id++ ;
         worker.persist(reg_obj);
+        sleep(1);
     }
     finished = true;
     th.join();
