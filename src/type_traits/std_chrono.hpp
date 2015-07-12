@@ -38,7 +38,7 @@ class value_traits<std::chrono::system_clock::time_point, id_date> {
                                   hour,
                                   minute,
                                   second);
-                time.tm_year = static_cast<int>(year);
+                time.tm_year = static_cast<int>(year-1900);
                 time.tm_mon = static_cast<int>(month-1);
                 time.tm_mday = static_cast<int>(day);
                 time.tm_hour= static_cast<int>(hour);
@@ -72,7 +72,7 @@ class value_traits<std::chrono::system_clock::time_point, id_date> {
             unsigned char minute = static_cast<unsigned char>(time->tm_min);
             unsigned char second = static_cast<unsigned char>(time->tm_sec);
             details::set_date(b,
-                              year,
+                              year+1900,
                               month+1,
                               day,
                               hour,
