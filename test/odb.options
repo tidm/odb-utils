@@ -1,0 +1,10 @@
+--database oracle
+--generate-schema
+--generate-query
+--std c++11
+--sequence-suffix _SEQ
+--hxx-suffix .hpp
+--ixx-suffix _inline.hpp
+--cxx-suffix .cpp
+--odb-file-suffix _odb
+
