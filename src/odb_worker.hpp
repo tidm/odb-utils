@@ -19,6 +19,7 @@
 #define  MAX_COMMIT_COUNT  10000
 #define  MAX_QUE_SIZE  (std::numeric_limits<int>::max())
 
+
 namespace oi
 {
     struct odb_worker_param
@@ -32,29 +33,48 @@ namespace oi
     };
     std::ostream operator<<(std::ostream& os, const odb_worker_param& prm);
 
-    template<class T>
-        class odb_worker
-        {
+    class odb_worker_base
+    {
+        public:
             enum class state {NEW, READY, TERMINATED};
-            private:
+        protected:
             volatile state _state;
             odb_worker_param _init_param;
             oi_database * _db;
 
             oi::semaphore _sem;
-            std::queue<T> _que;
             std::mutex    _que_gurad;
 
             std::vector<std::thread*> _worker_threads;
-            std::function<void(oi::exception, const T& data)> _exception_handler;
+            std::function<void(oi::exception)> _exception_handler;
 
             odb_stat      _stat;
             std::mutex    _stat_gurad;
-            private:
-            odb_worker(const odb_worker&);//is PRIVATE to avoid pass by value - no body
-            odb_worker& operator=(const odb_worker&); //is PRIVATE to avoid assigning - no body
+            
+        private:
+            odb_worker_base(const odb_worker_base&);//is PRIVATE to avoid pass by value - no body_base
+            odb_worker_base& operator=(const odb_worker_base&); //is PRIVATE to avoid assigning - no body
+        public:
+            odb_worker_base();
+            void init(oi_database* db, 
+                    const odb_worker_param& prm,
+                    std::function<void(oi::exception)>  handler
+                    ) throw(oi::exception);
+            virtual void worker() = 0;
+            virtual odb_stat get_stat()throw();
+            void finalize()throw();
+            virtual ~odb_worker_base();
+
+    };
+
+    template<class T>
+        class odb_worker: public odb_worker_base
+    {
+        private:
+            std::queue<T> _que;
             void worker()
             {
+                
                 T obj;
                 std::vector<T> uncommited;
                 bool wait_res = false;
@@ -125,7 +145,7 @@ namespace oi
                             if(retry_count >= MAX_CONNECT_RETRY)
                             {
                                 oi::exception ox(__FILE__, __FUNCTION__, " maximum no of connection retries exceeded");
-                                _exception_handler(ox , obj); 
+                                _exception_handler(ox ); 
                                 continue;
                             }
                             typename std::vector<T>::iterator it;
@@ -145,10 +165,10 @@ namespace oi
                         catch(const odb::exception& ex)
                         {
                             oi::exception ox("odb", "exception", ex.what());
-                             ox.add_msg(__FILE__, __FUNCTION__, "unhandled odb exception");
+                            ox.add_msg(__FILE__, __FUNCTION__, "unhandled odb exception");
                             exec_state = execution_state::FAILED;
                             diff_time = 0;
-                            _exception_handler(ox, obj);
+                            _exception_handler(ox);
 
                         }
                         _stat_gurad.lock();
@@ -164,70 +184,36 @@ namespace oi
                     catch(const odb::exception& ex)
                     {
                         oi::exception ox(__FILE__, __FUNCTION__, (std::string("odb exception") + ex.what()).c_str());
-                        _exception_handler(ox, obj);
+                        _exception_handler(ox);
                     }
                 }
                 catch(std::exception & ex)
                 {
                     oi::exception ox(__FILE__, __FUNCTION__, (std::string("worker thread terminated due to std::exception: ") + ex.what()).c_str());
-                    _exception_handler(ox, obj);
+                    _exception_handler(ox);
                 }
                 catch(...)
                 {
                     oi::exception ox(__FILE__, __FUNCTION__, "worker thread terminated due to an unknown exception");
-                    _exception_handler(ox, obj);
+                    _exception_handler(ox);
                 }
             }
 
-            public:
-            odb_worker()
+        public:
+            odb_stat get_stat()throw()
             {
-                _state= state::NEW;
-                _db = nullptr;
-            }
-            void init(oi_database* db, 
-                    const odb_worker_param& prm,
-                    std::function<void(oi::exception, const T& data)>  handler
-                    ) throw(oi::exception)
-            {
-                if(_state != state::NEW)
+                
+                odb_stat temp = odb_worker_base::get_stat();
+                _que_gurad.lock();
                 {
-                    throw oi::exception(__FILE__, __FUNCTION__, 
-                            "invalid odb_worker state(re-initialization or initialization of a finalized worker)");
+                    temp.set_que_len(_que.size());
                 }
-                if(db == nullptr)
-                {
-                    throw oi::exception(__FILE__, __FUNCTION__, "database pointer is null");
-                }
-                if( prm.pool_size <= 0 || 
-                        prm.commit_count <= 0 || 
-                        prm.commit_timeout <= 0 || 
-                        prm.max_que_size <= 0 ||
-                        prm.pool_size > MAX_POOL_SIZE ||
-                        prm.max_que_size> MAX_QUE_SIZE ||
-                        prm.commit_timeout > MAX_COMMIT_TIMEOUT ||
-                        handler == nullptr
-                  )
-                {
-                    std::stringstream sstr;
-                    sstr << "invalid initialization parameter: " << prm.to_string().c_str()
-                        << "  0 <= pool_size < " << MAX_POOL_SIZE
-                        << "  0 <= commit_count < " << MAX_COMMIT_COUNT
-                        << "  0 <= commit_timeout < " << MAX_COMMIT_TIMEOUT
-                        << "  exception_handler != null ";
-                    throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
-                }
-                _exception_handler  = handler;
-                _init_param = prm;
-                _db = db;
-                _state = state::READY;
-                for(int i=0; i< _init_param.pool_size; i++)
-                {
-                    _worker_threads.push_back(new std::thread(std::bind(&odb_worker::worker, this)));
-                }
+                _que_gurad.unlock();
+                return temp;
             }
             void persist(const T & obj)throw(oi::exception)
             {
+                
                 if(_state != state::READY)
                 {
                     throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
@@ -244,41 +230,9 @@ namespace oi
                 _que_gurad.unlock();
                 _sem.notify();
             }
-            odb_stat get_stat()throw()
-            {
-                odb_stat temp;
-                _stat_gurad.lock();
-                {
-                    temp = _stat;
-                    _stat.reset();
-                }
-                _stat_gurad.unlock();
 
-                _que_gurad.lock();
-                {
-                    temp.set_que_len(_que.size());
-                }
-                _que_gurad.unlock();
-                return temp;
-            }
-            void finalize()throw()
-            {
-                if(_state == state::READY)
-                {
-                    _state = state::TERMINATED;
-                    for(int i=0; i< _init_param.pool_size; i++)
-                    {
-                        _worker_threads[i]->join();
-                        delete _worker_threads[i];
-                    }
-                }
-                _state = state::TERMINATED;
-            }
-            ~odb_worker()
-            {
+    };
 
-            }
 
-        };
 }
 #endif

@@ -13,7 +13,7 @@ LDADD=../src/.libs/liboi_odb_utils.a \
 	$(ODB_LIBS) \
 	$(ODB_ORACLE_LIBS) \
 	$(OI_COMMON_LIBS) \
-	$(OI_EXCEPTION_LIBS) \ 
+	$(OI_EXCEPTION_LIBS) \
 	$(BOOST_SYSTEM_LIBS)
 
 check_PROGRAMS = test_odb_worker 

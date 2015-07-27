@@ -17,5 +17,93 @@ namespace oi
             << "commit_timeout: " << commit_timeout;
         return sstr.str();
     }
+/*
+ *
+ */
+    odb_worker_base::odb_worker_base()
+    {
+        _state= state::NEW;
+        _db = nullptr;
+    }
+    void odb_worker_base::init(oi_database* db, 
+            const odb_worker_param& prm,
+            std::function<void(oi::exception)>  handler
+            ) throw(oi::exception)
+    {
+        
+        if(_state != state::NEW)
+        {
+            throw oi::exception(__FILE__, __FUNCTION__, 
+                    "invalid odb_worker_base state(re-initialization or initialization of a finalized worker)");
+        }
+        if(db == nullptr)
+        {
+            throw oi::exception(__FILE__, __FUNCTION__, "database pointer is null");
+        }
+        if( prm.pool_size <= 0 || 
+                prm.commit_count <= 0 || 
+                prm.commit_timeout <= 0 || 
+                prm.max_que_size <= 0 ||
+                prm.pool_size > MAX_POOL_SIZE ||
+                prm.max_que_size> MAX_QUE_SIZE ||
+                prm.commit_timeout > MAX_COMMIT_TIMEOUT ||
+                handler == nullptr
+          )
+        {
+            std::stringstream sstr;
+            sstr << "invalid initialization parameter: " << prm.to_string().c_str()
+                << "  0 <= pool_size < " << MAX_POOL_SIZE
+                << "  0 <= commit_count < " << MAX_COMMIT_COUNT
+                << "  0 <= commit_timeout < " << MAX_COMMIT_TIMEOUT
+                << "  exception_handler != null ";
+            throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
+        }
+        _exception_handler  = handler;
+        _init_param = prm;
+        _db = db;
+        _state = state::READY;
+        for(int i=0; i< _init_param.pool_size; i++)
+        {
+            _worker_threads.push_back(new std::thread(std::bind(&odb_worker_base::worker, this)));
+        }
+    }
+    odb_stat odb_worker_base::get_stat()throw()
+    {
+        
+        odb_stat temp;
+        _stat_gurad.lock();
+        {
+            temp = _stat;
+            _stat.reset();
+        }
+        _stat_gurad.unlock();
+        return temp;
+    }
+
+
+
+    void odb_worker_base::finalize()throw()
+    {
+        
+        if(_state == state::READY)
+        {
+            _state = state::TERMINATED;
+            for(int i=0; i< _init_param.pool_size; i++)
+            {
+                _worker_threads[i]->join();
+                delete _worker_threads[i];
+            }
+        }
+        _state = state::TERMINATED;
+    }
+    odb_worker_base::~odb_worker_base()
+    {
+
+    }
+
+    /*
+     *
+     *
+     */
 
 }

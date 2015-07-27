@@ -100,7 +100,8 @@ am__DEPENDENCIES_1 =
 liboi_odb_utils_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_liboi_odb_utils_la_OBJECTS = odb_stat.lo odb_worker.lo
+am_liboi_odb_utils_la_OBJECTS = odb_stat.lo odb_worker.lo \
+	odb_async_worker.lo
 liboi_odb_utils_la_OBJECTS = $(am_liboi_odb_utils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -308,7 +309,8 @@ liboi_odb_utils_la_SOURCES = \
     type_traits/std_chrono.hpp \
 	type_traits/std_chrono_oracle.hpp \
 	odb_stat.cpp \
-	odb_worker.cpp
+	odb_worker.cpp \
+	odb_async_worker.cpp
 
 liboi_odb_utils_la_LDFLAGS = -version-info $(OI_ODB_UTILS_SO_VERSION)
 liboi_odb_utils_la_LIBADD = \
@@ -397,6 +399,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/odb_async_worker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/odb_stat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/odb_worker.Plo@am__quote@
 
