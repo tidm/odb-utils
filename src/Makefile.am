@@ -23,7 +23,13 @@ liboi_odb_utils_la_LIBADD = \
 	$(OI_COMMON_LIBS) \
 	$(OI_EXCEPTION_LIBS) 
 
-oi_odb_utils_includedir = $(includedir)/oi/utils/odb_utils/type_traits
+oi_odb_utils_includedir = $(includedir)/oi/utils/odb_utils/
 oi_odb_utils_include_HEADERS = \
+	odb_stat.hpp \
+	odb_worker.hpp \
+	odb_async_worker.hpp
+
+otherincludedir = $(includedir)/oi/utils/odb_utils/type_traits/
+otherinclude_HEADERS = \
 	type_traits/std_chrono.hpp \
 	type_traits/std_chrono_oracle.hpp

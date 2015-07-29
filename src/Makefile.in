@@ -53,8 +53,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = src
-DIST_COMMON = $(oi_odb_utils_include_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(oi_odb_utils_include_HEADERS) $(otherinclude_HEADERS) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
 	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
@@ -94,7 +94,8 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" \
-	"$(DESTDIR)$(oi_odb_utils_includedir)"
+	"$(DESTDIR)$(oi_odb_utils_includedir)" \
+	"$(DESTDIR)$(otherincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 liboi_odb_utils_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
@@ -159,7 +160,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-HEADERS = $(oi_odb_utils_include_HEADERS)
+HEADERS = $(oi_odb_utils_include_HEADERS) $(otherinclude_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -319,8 +320,14 @@ liboi_odb_utils_la_LIBADD = \
 	$(OI_COMMON_LIBS) \
 	$(OI_EXCEPTION_LIBS) 
 
-oi_odb_utils_includedir = $(includedir)/oi/utils/odb_utils/type_traits
+oi_odb_utils_includedir = $(includedir)/oi/utils/odb_utils/
 oi_odb_utils_include_HEADERS = \
+	odb_stat.hpp \
+	odb_worker.hpp \
+	odb_async_worker.hpp
+
+otherincludedir = $(includedir)/oi/utils/odb_utils/type_traits/
+otherinclude_HEADERS = \
 	type_traits/std_chrono.hpp \
 	type_traits/std_chrono_oracle.hpp
 
@@ -450,6 +457,27 @@ uninstall-oi_odb_utils_includeHEADERS:
 	@list='$(oi_odb_utils_include_HEADERS)'; test -n "$(oi_odb_utils_includedir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(oi_odb_utils_includedir)'; $(am__uninstall_files_from_dir)
+install-otherincludeHEADERS: $(otherinclude_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(otherinclude_HEADERS)'; test -n "$(otherincludedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(otherincludedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(otherincludedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(otherincludedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(otherincludedir)" || exit $$?; \
+	done
+
+uninstall-otherincludeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(otherinclude_HEADERS)'; test -n "$(otherincludedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(otherincludedir)'; $(am__uninstall_files_from_dir)
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -537,7 +565,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(oi_odb_utils_includedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(oi_odb_utils_includedir)" "$(DESTDIR)$(otherincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -593,7 +621,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-oi_odb_utils_includeHEADERS
+install-data-am: install-oi_odb_utils_includeHEADERS \
+	install-otherincludeHEADERS
 
 install-dvi: install-dvi-am
 
@@ -640,7 +669,8 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-libLTLIBRARIES \
-	uninstall-oi_odb_utils_includeHEADERS
+	uninstall-oi_odb_utils_includeHEADERS \
+	uninstall-otherincludeHEADERS
 
 .MAKE: install-am install-strip
 
@@ -652,13 +682,15 @@ uninstall-am: uninstall-libLTLIBRARIES \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am \
 	install-libLTLIBRARIES install-man \
-	install-oi_odb_utils_includeHEADERS install-pdf install-pdf-am \
+	install-oi_odb_utils_includeHEADERS \
+	install-otherincludeHEADERS install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-libLTLIBRARIES \
-	uninstall-oi_odb_utils_includeHEADERS
+	uninstall-oi_odb_utils_includeHEADERS \
+	uninstall-otherincludeHEADERS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
