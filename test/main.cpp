@@ -127,7 +127,15 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 5000000; i++)
+    for(int i=0; i< 1000000; i++)
+    {
+        reg_obj.tx_id = reg_obj.tx_id++ ;
+        worker.persist<ns2__reg_agent_obj>(reg_obj);
+        worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
+    }
+    std::cerr << " waiting................................................" << std::endl;
+    sleep(21);
+    for(int i=0; i< 1000000; i++)
     {
         reg_obj.tx_id = reg_obj.tx_id++ ;
         worker.persist<ns2__reg_agent_obj>(reg_obj);
