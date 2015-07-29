@@ -1,6 +1,6 @@
 #include "req_agent.hpp"
 #include "req_agent_odb.hpp"
-#include "../src/odb_worker.hpp"
+#include "../src/odb_async_worker.hpp"
 std::ostream& operator<<(std::ostream & os, const ns2__reg_agent_obj & obj)
 {
 
@@ -63,8 +63,8 @@ std::ostream& operator<<(std::ostream & os, const ns2__reg_agent_obj & obj)
     os << " " << obj.funder_acct_id ;
     return os;
 }
-oi::odb_worker<ns2__reg_agent_obj>  worker;
-void ex_handler(oi::exception ex, ns2__reg_agent_obj obj)
+oi::odb_async_worker  worker;
+void ex_handler(oi::exception ex)
 {
     std::cerr << ex.what() << std::endl;
    // throw ex;
@@ -88,15 +88,16 @@ int main()
     db  = new oi_database("OI_TESTING", "ot", "10.0.0.111:1521/orcl");
 
     oi::odb_worker_param prm;
-    prm.max_que_size = 3000000;
-    prm.pool_size = 5;
-    prm.commit_count = 1000;
+    prm.max_que_size = 10000000;
+    prm.pool_size = 9;
+    prm.commit_count = 100;
     prm.commit_timeout = 1;
 
-    std::function<void(oi::exception, const ns2__reg_agent_obj&)> f= & ex_handler;
+    std::function<void(oi::exception)> f= & ex_handler;
     worker.init(db, prm, f);
 
     ns2__reg_agent_obj  reg_obj;
+    ns2__reg_customer_obj reg_cust_obj;
 
     reg_obj.tx_type = std::rand() % 10000;//
     reg_obj.hypertag_id = 3;//
@@ -126,12 +127,13 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 1000000; i++)
+    for(int i=0; i< 5000000; i++)
     {
         reg_obj.tx_id = reg_obj.tx_id++ ;
-        worker.persist(reg_obj);
-        sleep(1);
+        worker.persist<ns2__reg_agent_obj>(reg_obj);
+        worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
     }
+    sleep(5);
     finished = true;
     th.join();
     worker.finalize();

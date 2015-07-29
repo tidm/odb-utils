@@ -12,7 +12,8 @@ liboi_odb_utils_la_SOURCES = \
     type_traits/std_chrono.hpp \
 	type_traits/std_chrono_oracle.hpp \
 	odb_stat.cpp \
-	odb_worker.cpp
+	odb_worker.cpp \
+	odb_async_worker.cpp
 
 liboi_odb_utils_la_LDFLAGS = -version-info $(OI_ODB_UTILS_SO_VERSION)
 
