@@ -71,12 +71,13 @@ namespace oi
         class odb_worker: public odb_worker_base
     {
         private:
-            std::queue<T> _que;
+            std::queue<T*> _que;
             void worker()
             {
                 
                 T obj;
-                std::vector<T> uncommited;
+                T* p = NULL;
+                std::vector<T*> uncommited;
                 bool wait_res = false;
                 execution_state exec_state = execution_state::SUCCESS;
                 odb::core::transaction* trans = NULL;
@@ -100,15 +101,15 @@ namespace oi
                         }
                         _que_gurad.lock();
                         {
-                            obj = _que.front();
+                            p = _que.front();
                             _que.pop();
                         }
                         _que_gurad.unlock();
-                        uncommited.push_back(obj);
+                        uncommited.push_back(p);
                         try
                         {
                             auto start = std::chrono::high_resolution_clock::now(); 
-                            _db->persist(obj);
+                            _db->persist(*p);
 
                             commit_counter++;
                             if(commit_counter > _init_param.commit_count
@@ -116,6 +117,11 @@ namespace oi
                                     std::chrono::duration_cast<std::chrono::seconds>(start - last_commit).count() > _init_param.commit_timeout )
                             {
                                 trans->commit();
+                                typename std::vector<T*>::iterator it;
+                                for(it= uncommited.begin(); it != uncommited.end(); it++)
+                                {
+                                    delete *it;
+                                }
                                 uncommited.clear();
                                 trans->reset(_db->begin());
                                 commit_counter = 0;
@@ -148,7 +154,7 @@ namespace oi
                                 _exception_handler(ox ); 
                                 continue;
                             }
-                            typename std::vector<T>::iterator it;
+                            typename std::vector<T*>::iterator it;
                             _que_gurad.lock();
                             {
                                 for(it= uncommited.begin(); it != uncommited.end(); it++)
@@ -225,7 +231,8 @@ namespace oi
                         _que_gurad.unlock();
                         throw oi::exception(__FILE__, __FUNCTION__, (std::string("maximum queue size exceeded! max limit is ") + std::to_string(_init_param.max_que_size)).c_str());
                     }
-                    _que.push(obj);
+                    T * p = new T(obj);
+                    _que.push(p);
                 }
                 _que_gurad.unlock();
                 _sem.notify();
