@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <limits>
 #include <exception.hpp>
+#include <unistd.h>
 
 #define  MAX_CONNECT_RETRY 3600
 #define  MAX_POOL_SIZE  100
