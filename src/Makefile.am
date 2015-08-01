@@ -1,6 +1,6 @@
 ACLCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 AM_CPPFLAGS = \
-	--pedantic -Wall -Werror -Wno-unknown-parallel\
+	--pedantic -Wall -Werror -Wno-unknown-pragmas\
 	$(ODB_CFLAGS) \
 	$(ODB_ORACLE_CFLAGS) \
 	$(OI_COMMON_CFLAGS) \

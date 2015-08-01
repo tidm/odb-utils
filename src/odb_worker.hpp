@@ -227,7 +227,7 @@ namespace oi
                 }
                 _que_gurad.lock();
                 {
-                    if(_que.size() >= _init_param.max_que_size)
+                    if(static_cast<int>(_que.size()) >= _init_param.max_que_size)
                     {
                         _que_gurad.unlock();
                         throw oi::exception(__FILE__, __FUNCTION__, (std::string("maximum queue size exceeded! max limit is ") + std::to_string(_init_param.max_que_size)).c_str());

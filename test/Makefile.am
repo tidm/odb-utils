@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 AM_CFLAGS = --pedantic
 AM_CXXFLAGS = --pedantic
-AM_CPPFLAGS = -I../src/ \
+AM_CPPFLAGS = -I../src/ -Wall -Werror -Wno-unknown-pragmas\
     $(OI_EXCEPTION_CFLAGS) \
 	$(OI_COMMON_CFLAGS) \
 	$(ODB_CFLAGS) \
