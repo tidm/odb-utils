@@ -3,6 +3,7 @@ AM_CPPFLAGS = \
 	--pedantic -Wall -Werror -Wno-unknown-pragmas\
 	$(ODB_CFLAGS) \
 	$(ODB_ORACLE_CFLAGS) \
+	$(ODB_BOOST_CFLAGS) \
 	$(OI_COMMON_CFLAGS) \
 	$(OI_EXCEPTION_CFLAGS)
 
@@ -20,6 +21,7 @@ liboi_odb_utils_la_LDFLAGS = -version-info $(OI_ODB_UTILS_SO_VERSION)
 liboi_odb_utils_la_LIBADD = \
 	$(ODB_LIBS) \
 	$(ODB_ORACLE_LIBS) \
+	$(ODB_BOOST_LIBS) \
 	$(OI_COMMON_LIBS) \
 	$(OI_EXCEPTION_LIBS) 
 
