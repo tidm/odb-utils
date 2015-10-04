@@ -98,6 +98,27 @@ namespace oi
                         }
                         if(wait_res == false)
                         {
+                            std::cerr << "wait_res == false" << std::endl;
+
+                            auto nw = std::chrono::high_resolution_clock::now(); 
+                            std::cerr << "TIMEOUT VALUE: " << _init_param.commit_timeout << std::endl;// << " now: " << nw  << " last_commit: "<< last_commit << std::endl; 
+                            if(std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count() >= _init_param.commit_timeout )
+                            {
+
+                                std::cerr << "COMMIT TIMEOUT" << std::endl;
+
+                                trans->commit();
+                                typename std::vector<T*>::iterator it;
+                                for(it= uncommited.begin(); it != uncommited.end(); it++)
+                                {
+                                    delete *it;
+                                }
+                                uncommited.clear();
+                                trans->reset(_db->begin());
+                                commit_counter = 0;
+                                last_commit = nw;
+                            }
+
                             continue;
                         }
                         _que_gurad.lock();
