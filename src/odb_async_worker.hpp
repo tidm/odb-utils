@@ -39,7 +39,6 @@ namespace oi
                             wr = new odb_worker<T>();
                             wr->init(_db, _init_param, _exception_handler);
                             _workers[t_name] = static_cast<odb_worker_base*>(wr);
-                            std::cerr << "new worker created for " << t_name << std::endl;
                         }
                         else
                         {
