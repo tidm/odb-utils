@@ -98,7 +98,6 @@ namespace oi
                         }
                         if(wait_res == false)
                         {
-                            std::cerr << "wait_res == false" << std::endl;
 
                             auto nw = std::chrono::high_resolution_clock::now(); 
                             if(std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count() >= _init_param.commit_timeout )
