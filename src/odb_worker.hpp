@@ -167,7 +167,7 @@ namespace oi
                             }
                             if(retry_count >= MAX_CONNECT_RETRY)
                             {
-                                oi::exception ox(__FILE__, __FUNCTION__, " maximum no of connection retries exceeded");
+                                oi::exception ox(__FILE__, __FUNCTION__, " maximum no of connection retries exceeded (type: %)", typeid(T).name());
                                 _exception_handler(ox ); 
                                 continue;
                             }
@@ -188,7 +188,7 @@ namespace oi
                         catch(const odb::exception& ex)
                         {
                             oi::exception ox("odb", "exception", ex.what());
-                            ox.add_msg(__FILE__, __FUNCTION__, "unhandled odb exception");
+                            ox.add_msg(__FILE__, __FUNCTION__, "unhandled odb exception on type %", typeid(T).name());
                             exec_state = execution_state::FAILED;
                             diff_time = 0;
                             _exception_handler(ox);
@@ -206,18 +206,18 @@ namespace oi
                     }
                     catch(const odb::exception& ex)
                     {
-                        oi::exception ox(__FILE__, __FUNCTION__, (std::string("odb exception") + ex.what()).c_str());
+                        oi::exception ox(__FILE__, __FUNCTION__, "odb exception on type `%': %" ,typeid(T).name(), ex.what() );
                         _exception_handler(ox);
                     }
                 }
                 catch(std::exception & ex)
                 {
-                    oi::exception ox(__FILE__, __FUNCTION__, (std::string("worker thread terminated due to std::exception: ") + ex.what()).c_str());
+                    oi::exception ox(__FILE__, __FUNCTION__, "worker thread on type % terminated due to std::exception: %", typeid(T).name(), ex.what());
                     _exception_handler(ox);
                 }
                 catch(...)
                 {
-                    oi::exception ox(__FILE__, __FUNCTION__, "worker thread terminated due to an unknown exception");
+                    oi::exception ox(__FILE__, __FUNCTION__, "worker thread on type % terminated due to an unknown exception", typeid(T).name());
                     _exception_handler(ox);
                 }
             }
