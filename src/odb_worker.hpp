@@ -76,7 +76,7 @@ namespace oi
             void worker()
             {
                 
-                T obj;
+             //   T obj;
                 T* p = NULL;
                 std::vector<T*> uncommited;
                 bool wait_res = false;
