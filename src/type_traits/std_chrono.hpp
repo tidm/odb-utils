@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <iostream>
 
 namespace odb {
 namespace oracle {
@@ -60,7 +61,7 @@ class value_traits<std::chrono::system_clock::time_point, id_date> {
             tm* time;
             if(!is_null) {
                 time_info = std::chrono::system_clock::to_time_t(v);
-                time = localtime(&time_info);
+                time = gmtime(&time_info);
             }
             else {
                 time = 0;
