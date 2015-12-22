@@ -21,6 +21,35 @@ namespace oi
             odb_stat get_stat()throw();
 
             template<typename T>
+                void set_local_handler(std::function<void(oi::exception, const T& obj)>  handler)
+                {
+                    if(_state != odb_worker_base::state::READY)
+                    {
+                        throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
+                    }
+                    std::string t_name = typeid(T).name();
+                    std::map<std::string, odb_worker_base*>::iterator it;
+                    odb_worker<T> * wr = NULL;
+                    _workers_guard.lock();
+                    {
+                        it = _workers.find(t_name);
+                        if(it == _workers.end())
+                        {
+                            wr = new odb_worker<T>();
+                            wr->init(_db, _init_param, handler, _exception_handler);
+                            _workers[t_name] = static_cast<odb_worker_base*>(wr);
+                        }
+                        else
+                        {
+                            _workers_guard.unlock();
+                            throw oi::exception(__FILE__, __FUNCTION__, "unable to recreate channel! this method should be called before any `persist' invokation");
+                        }
+                    }
+                    _workers_guard.unlock();
+
+
+                }
+            template<typename T>
                 void persist(const T & obj)throw(oi::exception)
                 {
                     

@@ -57,7 +57,7 @@ namespace oi
             odb_worker_base& operator=(const odb_worker_base&); //is PRIVATE to avoid assigning - no body
         public:
             odb_worker_base();
-            void init(oi_database* db, 
+            virtual void init(oi_database* db, 
                     const odb_worker_param& prm,
                     std::function<void(oi::exception)>  handler
                     ) throw(oi::exception);
@@ -71,13 +71,72 @@ namespace oi
     template<class T>
         class odb_worker: public odb_worker_base
     {
+        public:
+            std::function<void(oi::exception, const T& obj)> _local_exception_handler;
+            void init(oi_database* db, 
+                    const odb_worker_param& prm,
+                    std::function<void(oi::exception)>  handler
+                    ) throw(oi::exception)
+            {
+                odb_worker_base::init(db, prm, handler);
+            }
+
+
+            void init(oi_database* db, 
+                    const odb_worker_param& prm,
+                    std::function<void(oi::exception, const T& obj)>  local_handler, 
+                    std::function<void(oi::exception)>  handler
+
+                    ) throw(oi::exception)
+            {
+
+                if(_state != state::NEW)
+                {
+                    throw oi::exception(__FILE__, __FUNCTION__, 
+                            "invalid odb_worker_base state(re-initialization or initialization of a finalized worker)");
+                }
+                if(db == nullptr)
+                {
+                    throw oi::exception(__FILE__, __FUNCTION__, "database pointer is null");
+                }
+                if( prm.pool_size <= 0 || 
+                        prm.commit_count <= 0 || 
+                        prm.commit_timeout <= 0 || 
+                        prm.max_que_size <= 0 ||
+                        prm.pool_size > MAX_POOL_SIZE ||
+                        prm.max_que_size> MAX_QUE_SIZE ||
+                        prm.commit_timeout > MAX_COMMIT_TIMEOUT ||
+                        handler == nullptr
+                  )
+                {
+                    std::stringstream sstr;
+                    sstr << "invalid initialization parameter: " << prm.to_string().c_str()
+                        << "  0 <= pool_size < " << MAX_POOL_SIZE
+                        << "  0 <= commit_count < " << MAX_COMMIT_COUNT
+                        << "  0 <= commit_timeout < " << MAX_COMMIT_TIMEOUT
+                        << "  exception_handler != null ";
+                    throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
+                }
+                _local_exception_handler  = local_handler;
+                _exception_handler  = handler;
+                _init_param = prm;
+                _db = db;
+                _state = state::READY;
+                for(int i=0; i< _init_param.pool_size; i++)
+                {
+                    _worker_threads.push_back(new std::thread(std::bind(&odb_worker_base::worker, this)));
+                }
+            }
+
+
         private:
             std::queue<T*> _que;
             void worker()
             {
-                
-             //   T obj;
+
+                //   T obj;
                 T* p = NULL;
+                T tmp;
                 std::vector<T*> uncommited;
                 bool wait_res = false;
                 execution_state exec_state = execution_state::SUCCESS;
@@ -123,6 +182,7 @@ namespace oi
                         }
                         _que_gurad.unlock();
                         uncommited.push_back(p);
+                        tmp = *p;
                         try
                         {
                             auto start = std::chrono::high_resolution_clock::now(); 
@@ -168,7 +228,14 @@ namespace oi
                             if(retry_count >= MAX_CONNECT_RETRY)
                             {
                                 oi::exception ox(__FILE__, __FUNCTION__, " maximum no of connection retries exceeded (type: %)", typeid(T).name());
-                                _exception_handler(ox ); 
+                                if(_local_exception_handler && p != NULL)
+                                {
+                                    _local_exception_handler(ox, tmp); 
+                                }
+                                else
+                                {
+                                    _exception_handler(ox ); 
+                                }
                                 continue;
                             }
                             typename std::vector<T*>::iterator it;
@@ -191,7 +258,15 @@ namespace oi
                             ox.add_msg(__FILE__, __FUNCTION__, "unhandled odb exception on type %", typeid(T).name());
                             exec_state = execution_state::FAILED;
                             diff_time = 0;
-                            _exception_handler(ox);
+
+                            if(_local_exception_handler && p != NULL)
+                            {
+                                _local_exception_handler(ox, tmp ); 
+                            }
+                            else
+                            {
+                                _exception_handler(ox ); 
+                            }
 
                         }
                         _stat_gurad.lock();
@@ -207,25 +282,47 @@ namespace oi
                     catch(const odb::exception& ex)
                     {
                         oi::exception ox(__FILE__, __FUNCTION__, "odb exception on type `%': %" ,typeid(T).name(), ex.what() );
-                        _exception_handler(ox);
+
+                        if(_local_exception_handler && p != NULL)
+                        {
+                            _local_exception_handler(ox, tmp ); 
+                        }
+                        else
+                        {
+                            _exception_handler(ox ); 
+                        }
                     }
                 }
                 catch(std::exception & ex)
                 {
                     oi::exception ox(__FILE__, __FUNCTION__, "worker thread on type % terminated due to std::exception: %", typeid(T).name(), ex.what());
-                    _exception_handler(ox);
+                    if(_local_exception_handler && p != NULL)
+                    {
+                        _local_exception_handler(ox, tmp ); 
+                    }
+                    else
+                    {
+                        _exception_handler(ox ); 
+                    }
                 }
                 catch(...)
                 {
                     oi::exception ox(__FILE__, __FUNCTION__, "worker thread on type % terminated due to an unknown exception", typeid(T).name());
-                    _exception_handler(ox);
+                    if(_local_exception_handler && p != NULL)
+                    {
+                        _local_exception_handler(ox, tmp ); 
+                    }
+                    else
+                    {
+                        _exception_handler(ox ); 
+                    }
                 }
             }
 
         public:
             odb_stat get_stat()throw()
             {
-                
+
                 odb_stat temp = odb_worker_base::get_stat();
                 _que_gurad.lock();
                 {
@@ -236,7 +333,7 @@ namespace oi
             }
             void persist(const T & obj)throw(oi::exception)
             {
-                
+
                 if(_state != state::READY)
                 {
                     throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
