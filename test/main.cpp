@@ -66,7 +66,16 @@ std::ostream& operator<<(std::ostream & os, const ns2__reg_agent_obj & obj)
 oi::odb_async_worker  worker;
 void ex_handler(oi::exception ex)
 {
+    std::cerr << "#### generic handler" << std::endl;
     std::cerr << ex.what() << std::endl;
+   // throw ex;
+}
+void local_handler(oi::exception ex, const ns2__reg_agent_obj& obj)
+{
+    std::cerr << "**** local handler" << std::endl;
+    std::cerr << ex.what() << std::endl;
+    std::cerr << obj << std::endl;
+
    // throw ex;
 }
 bool finished;
@@ -94,13 +103,15 @@ int main()
     prm.commit_timeout = 1;
 
     std::function<void(oi::exception)> f= & ex_handler;
+    std::function<void(oi::exception, const ns2__reg_agent_obj&)> f2= &local_handler;
     worker.init(db, prm, f);
+    worker.set_local_handler(f2);
 
     ns2__reg_agent_obj  reg_obj;
     ns2__reg_customer_obj reg_cust_obj;
 
     reg_obj.tx_type = std::rand() % 10000;//
-    reg_obj.hypertag_id = 3;//
+    reg_obj.hypertag_id = 30;//
     reg_obj.bank_code = 4;//
     reg_obj.agent_code =std::to_string(std::rand() % 66660618);//
     reg_obj.cif_id =  std::rand() % 1006;
@@ -114,7 +125,7 @@ int main()
     reg_obj.home_region = "14";
     reg_obj.home_city = "15";
     reg_obj.home_township = "16";
-    reg_obj.date_birth = "17";
+    reg_obj.date_birth = "7";
     reg_obj.id_type = std::rand() % 10;
     reg_obj.id_no = "19";
     reg_obj.gender = "20";
@@ -127,7 +138,7 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 1000000; i++)
+    for(int i=0; i< 1; i++)
     {
         reg_obj.tx_id++;
         reg_obj.tx_id = reg_obj.tx_id ;
@@ -135,17 +146,17 @@ int main()
         worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
     }
     std::cerr << " waiting................................................" << std::endl;
-    sleep(21);
-    for(int i=0; i< 1000000; i++)
-    {
-        reg_obj.tx_id++;
-        reg_obj.tx_id = reg_obj.tx_id;
-        worker.persist<ns2__reg_agent_obj>(reg_obj);
-        worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
-    }
-    sleep(5);
+   // sleep(21);
+ //   for(int i=0; i< 10; i++)
+ //   {
+ //       reg_obj.tx_id++;
+ //       reg_obj.tx_id = reg_obj.tx_id;
+ //       worker.persist<ns2__reg_agent_obj>(reg_obj);
+ //       worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
+ //   }
     finished = true;
     th.join();
+    sleep(1);
     worker.finalize();
     return 0;
 }
