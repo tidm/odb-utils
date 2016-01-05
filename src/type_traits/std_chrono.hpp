@@ -45,7 +45,7 @@ class value_traits<std::chrono::system_clock::time_point, id_date> {
                 time.tm_hour= static_cast<int>(hour);
                 time.tm_min= static_cast<int>(minute);
                 time.tm_sec= static_cast<int>(second);
-                time_info = mktime(&time);
+                time_info = timegm(&time);
             }
             else {
                 time_info = 0;
