@@ -2,7 +2,7 @@
 namespace oi {
 std::ostream& operator<<(std::ostream& os, const odb_stat& od) {
     os << " fail: " << od._failure_count
-       << " recover: " << od._recover_count
+       << " recover attempts: " << od._recover_count
        << " que len: " << od._que_len
        << " success: {";
     os << static_cast<stat_info>(od);
@@ -56,11 +56,14 @@ void odb_stat::update(uint64_t val, execution_state st) {
         switch(st)
         {
             case execution_state::SUCCESS:
-            case execution_state::RECOVERED:
                 set(val);
                 break;
+            case execution_state::RECOVERING:
+                _recover_count++;
+                break;
             case execution_state::FAILED:
-            _failure_count++;
+                _failure_count++;
+                break;
         };
     }
 }

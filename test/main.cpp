@@ -98,14 +98,14 @@ int main()
 
     oi::odb_worker_param prm;
     prm.max_que_size = 10000000;
-    prm.pool_size = 9;
-    prm.commit_count = 100;
-    prm.commit_timeout = 1;
+    prm.pool_size = 3;
+    prm.commit_count = 100000;
+    prm.commit_timeout = 3;
 
     std::function<void(oi::exception)> f= & ex_handler;
     std::function<void(oi::exception, const ns2__reg_agent_obj&)> f2= &local_handler;
     worker.init(db, prm, f);
-    worker.set_local_handler(f2);
+    worker.set_local_handler<ns2__reg_agent_obj>(f2);
 
     ns2__reg_agent_obj  reg_obj;
     ns2__reg_customer_obj reg_cust_obj;
@@ -138,11 +138,11 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 1; i++)
+    for(int i=0; i< 1000000; i++)
     {
         reg_obj.tx_id++;
         reg_obj.tx_id = reg_obj.tx_id ;
-        worker.persist<ns2__reg_agent_obj>(reg_obj);
+   //     worker.persist<ns2__reg_agent_obj>(reg_obj);
         worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
     }
     std::cerr << " waiting................................................" << std::endl;

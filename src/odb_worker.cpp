@@ -59,12 +59,11 @@ void odb_worker_base::init(oi_database* db,
 }
 odb_stat odb_worker_base::get_stat()throw() {
     odb_stat temp;
-    _stat_gurad.lock();
     {
+        std::lock_guard<std::mutex> m(_stat_gurad);
         temp = _stat;
         _stat.reset();
     }
-    _stat_gurad.unlock();
     return temp;
 }
 

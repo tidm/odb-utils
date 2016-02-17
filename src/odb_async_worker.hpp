@@ -30,8 +30,8 @@ namespace oi
                     std::string t_name = typeid(T).name();
                     std::map<std::string, odb_worker_base*>::iterator it;
                     odb_worker<T> * wr = NULL;
-                    _workers_guard.lock();
                     {
+                        std::lock_guard<std::mutex> m(_workers_guard);
                         it = _workers.find(t_name);
                         if(it == _workers.end())
                         {
@@ -41,11 +41,9 @@ namespace oi
                         }
                         else
                         {
-                            _workers_guard.unlock();
                             throw oi::exception(__FILE__, __FUNCTION__, "unable to recreate channel! this method should be called before any `persist' invokation");
                         }
                     }
-                    _workers_guard.unlock();
 
 
                 }
@@ -60,8 +58,9 @@ namespace oi
                     std::string t_name = typeid(T).name();
                     std::map<std::string, odb_worker_base*>::iterator it;
                     odb_worker<T> * wr = NULL;
-                    _workers_guard.lock();
                     {
+                        std::lock_guard<std::mutex> m(_workers_guard);
+
                         it = _workers.find(t_name);
                         if(it == _workers.end())
                         {
@@ -74,7 +73,6 @@ namespace oi
                             wr = static_cast< odb_worker<T>* >(it->second);
                         }
                     }
-                    _workers_guard.unlock();
                     wr->persist(obj);
                 }
 
