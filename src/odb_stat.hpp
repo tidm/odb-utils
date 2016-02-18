@@ -3,7 +3,7 @@
 #include<common.hpp>
 #include<iostream>
 namespace oi {
-    enum class execution_state{SUCCESS = 0, RECOVERED = 1, FAILED =2 };
+    enum class execution_state{SUCCESS = 0, RECOVERING= 1, FAILED =2 };
 class odb_stat: public stat_info {
     friend std::ostream& operator<<(std::ostream& os, const odb_stat& od);
   private:

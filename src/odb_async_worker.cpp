@@ -53,34 +53,32 @@ namespace oi
         odb_stat st, aggr_st;
         if(_state == odb_worker_base::state::READY)
         {
-            _workers_guard.lock();
             {
+                std::lock_guard<std::mutex> m(_workers_guard);
                 for( it = _workers.begin(); it != _workers.end(); it++)
                 {
                     st = it->second->get_stat();
                     aggr_st = aggr_st + st;
                 }
             }
-            _workers_guard.unlock();
         }
         return aggr_st;
     }
 
     void odb_async_worker::finalize()throw ()
     {
-        
+
         if(_state == odb_worker_base::state::READY)
         {
             std::map<std::string, odb_worker_base*>::iterator it;
-            _workers_guard.lock();
             {
+                std::lock_guard<std::mutex> m(_workers_guard);
                 for( it = _workers.begin(); it != _workers.end(); it++)
                 {
                     it->second->finalize();
                     delete it->second;
                 }
             }
-            _workers_guard.unlock();
         }
         _state = odb_worker_base::state::TERMINATED;
     }
