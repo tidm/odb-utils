@@ -117,6 +117,30 @@ class odb_worker: public odb_worker_base {
         }
 
 
+        odb_stat get_stat()throw() {
+            odb_stat temp = odb_worker_base::get_stat();
+            {
+                std::lock_guard<std::mutex> m{_que_gurad};
+                temp.set_que_len(_que.size());
+            }
+            return temp;
+        }
+        void persist(const T& obj)throw(oi::exception) {
+            if(_state != state::READY) {
+                throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
+            }
+            {
+                std::lock_guard<std::mutex> m{_que_gurad};
+                if(_que.size() >= _init_param.max_que_size) {
+                    throw oi::exception(__FILE__, __FUNCTION__,
+                            (std::string("maximum queue size exceeded! max limit is ") + std::to_string(
+                                                                                                        _init_param.max_que_size)).c_str());
+                }
+                T* p = new T(obj);
+                _que.push_back(p);
+            }
+            _sem.notify();
+        }
     private:
         std::deque<T*> _que;
         bool reconnect(odb::core::transaction* & trans )
@@ -141,7 +165,7 @@ class odb_worker: public odb_worker_base {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
             if(_state != state::READY) {
-               return false ;
+                return false ;
             }
             else{
                 return true;
@@ -308,30 +332,6 @@ class odb_worker: public odb_worker_base {
         }
 
     public:
-        odb_stat get_stat()throw() {
-            odb_stat temp = odb_worker_base::get_stat();
-            {
-                std::lock_guard<std::mutex> m{_que_gurad};
-                temp.set_que_len(_que.size());
-            }
-            return temp;
-        }
-        void persist(const T& obj)throw(oi::exception) {
-            if(_state != state::READY) {
-                throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
-            }
-            {
-                std::lock_guard<std::mutex> m{_que_gurad};
-                if(_que.size() >= _init_param.max_que_size) {
-                    throw oi::exception(__FILE__, __FUNCTION__,
-                            (std::string("maximum queue size exceeded! max limit is ") + std::to_string(
-                                                                                                        _init_param.max_que_size)).c_str());
-                }
-                T* p = new T(obj);
-                _que.push_back(p);
-            }
-            _sem.notify();
-        }
 
 };
 

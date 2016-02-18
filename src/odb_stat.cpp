@@ -6,7 +6,7 @@ std::ostream& operator<<(std::ostream& os, const odb_stat& od) {
        << " que len: " << od._que_len
        << " success: {";
     os << static_cast<stat_info>(od);
-    os << "}";
+    os << "}(us)";
     return os;
 }
 

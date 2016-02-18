@@ -67,7 +67,7 @@ namespace oi
 
     void odb_async_worker::finalize()throw ()
     {
-        
+
         if(_state == odb_worker_base::state::READY)
         {
             std::map<std::string, odb_worker_base*>::iterator it;

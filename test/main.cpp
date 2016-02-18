@@ -158,8 +158,10 @@ int main()
  //       worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
  //   }
     finished = true;
+
+    
     th.join();
-    int x = 120;
+    int x = 20;
     std::cerr << "sleeping for " << x << " seconds..." << std::endl;
     sleep(x);
     worker.finalize();

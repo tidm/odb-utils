@@ -29,7 +29,7 @@ namespace oi
                     }
                     std::string t_name = typeid(T).name();
                     std::map<std::string, odb_worker_base*>::iterator it;
-                    odb_worker<T> * wr = NULL;
+                    odb_worker<T> * wr = nullptr;
                     {
                         std::lock_guard<std::mutex> m(_workers_guard);
                         it = _workers.find(t_name);
@@ -57,7 +57,7 @@ namespace oi
                     }
                     std::string t_name = typeid(T).name();
                     std::map<std::string, odb_worker_base*>::iterator it;
-                    odb_worker<T> * wr = NULL;
+                    odb_worker<T> * wr = nullptr;
                     {
                         std::lock_guard<std::mutex> m(_workers_guard);
 

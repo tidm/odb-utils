@@ -72,8 +72,8 @@ odb_stat odb_worker_base::get_stat()throw() {
 void odb_worker_base::finalize()throw() {
     if(_state == state::READY) {
         _state = state::TERMINATED;
-        for(int i=0; i< _init_param.pool_size; i++) {
-            _worker_threads[i].join();
+        for(auto & th: _worker_threads) {
+            th.join();
         }
     }
     _state = state::TERMINATED;
