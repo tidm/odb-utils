@@ -66,8 +66,8 @@ std::ostream& operator<<(std::ostream & os, const ns2__reg_agent_obj & obj)
 oi::odb_async_worker  worker;
 void ex_handler(oi::exception ex)
 {
-    std::cerr << "#### generic handler" << std::endl;
-    std::cerr << ex.what() << std::endl;
+  //  std::cerr << "#### generic handler" << std::endl;
+  //:  std::cerr << ex.what() << std::endl;
    // throw ex;
 }
 void local_handler(oi::exception ex, const ns2__reg_agent_obj& obj)
@@ -97,10 +97,10 @@ int main()
     db  = new oi_database("OI_TESTING", "ot", "10.0.0.111:1521/orcl");
 
     oi::odb_worker_param prm;
-    prm.max_que_size = 10000000;
-    prm.pool_size = 3;
-    prm.commit_count = 100000;
-    prm.commit_timeout = 3;
+    prm.max_que_size = 100000000;
+    prm.pool_size = 10;
+    prm.commit_count = 100;
+    prm.commit_timeout = 1;
 
     std::function<void(oi::exception)> f= & ex_handler;
     std::function<void(oi::exception, const ns2__reg_agent_obj&)> f2= &local_handler;
@@ -138,12 +138,15 @@ int main()
     reg_obj.funder_acct_id = "27";
 
     std::thread th(&get_stat);
-    for(int i=0; i< 1000000; i++)
+    for(int i=0; i< 10000000; i++)
     {
-        reg_obj.tx_id++;
-        reg_obj.tx_id = reg_obj.tx_id ;
+        reg_obj.tx_id = i;
+        reg_cust_obj.tx_id = reg_obj.tx_id ;
    //     worker.persist<ns2__reg_agent_obj>(reg_obj);
         worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
+        std::this_thread::yield();
+ //       std::this_thread::sleep_for(std::chrono::nanoseconds(300));
+//        usleep(1);
     }
     std::cerr << " waiting................................................" << std::endl;
    // sleep(21);

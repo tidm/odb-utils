@@ -17,7 +17,7 @@
 #define  MAX_POOL_SIZE  100
 #define  MAX_COMMIT_TIMEOUT  60
 #define  MAX_COMMIT_COUNT  10000
-#define  MAX_QUE_SIZE  (std::numeric_limits<std::size_t>::max())
+#define  MAX_QUE_SIZE  100000000
 
 
 namespace oi {
@@ -175,6 +175,7 @@ class odb_worker: public odb_worker_base {
                     if(_state != state::READY) {//someone has called finalize()
                         break;
                     }
+                    //check if a commit command should be executed
                     auto nw = std::chrono::high_resolution_clock::now();
                     if(std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count() >= _init_param.commit_timeout
                             || commit_counter > _init_param.commit_count
@@ -244,6 +245,11 @@ class odb_worker: public odb_worker_base {
                             p = nullptr;
                             if(uncommited.size() > 0) {
                                 uncommited.pop_back();
+                            }
+
+                            {
+                                std::lock_guard<std::mutex> m{_stat_gurad};
+                                _stat.update(0, execution_state::FAILED);
                             }
                         }
                         {
