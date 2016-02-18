@@ -146,7 +146,7 @@ int main()
         worker.persist<ns2__reg_customer_obj>(reg_cust_obj);
         std::this_thread::yield();
  //       std::this_thread::sleep_for(std::chrono::nanoseconds(300));
-//        usleep(1);
+        usleep(1);
     }
     std::cerr << " waiting................................................" << std::endl;
    // sleep(21);
@@ -159,7 +159,9 @@ int main()
  //   }
     finished = true;
     th.join();
-    sleep(1);
+    int x = 120;
+    std::cerr << "sleeping for " << x << " seconds..." << std::endl;
+    sleep(x);
     worker.finalize();
     return 0;
 }

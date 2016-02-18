@@ -3,7 +3,7 @@
 #include "odb_stat.hpp"
 #include "odb_headers.hpp"
 #include <sstream>
-#include <queue>
+#include <deque>
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -118,7 +118,7 @@ class odb_worker: public odb_worker_base {
 
 
     private:
-        std::queue<T*> _que;
+        std::deque<T*> _que;
         bool reconnect(odb::core::transaction* & trans )
         {
             while(_state == state::READY)  {
@@ -169,6 +169,8 @@ class odb_worker: public odb_worker_base {
                 trans = new odb::core::transaction(_db->begin());
                 int commit_counter = 0;
                 auto last_commit = std::chrono::high_resolution_clock::now();
+                auto last_shrink = std::chrono::high_resolution_clock::now();
+
                 //start of main LOOP
                 while(_state == state::READY) {
                     wait_res = _sem.wait_for(100);
@@ -177,9 +179,8 @@ class odb_worker: public odb_worker_base {
                     }
                     //check if a commit command should be executed
                     auto nw = std::chrono::high_resolution_clock::now();
-                    if(std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count() >= _init_param.commit_timeout
-                            || commit_counter > _init_param.commit_count
-                      ) {
+                    auto time_to_last_commit = std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count();
+                    if(time_to_last_commit >= _init_param.commit_timeout || commit_counter > _init_param.commit_count ) {
                         try{
                             trans->commit();
                             for(auto i: uncommited) {
@@ -204,11 +205,20 @@ class odb_worker: public odb_worker_base {
                     if(wait_res == false) {//there is no new object to store
                         continue;
                     }
+
+                    nw = std::chrono::high_resolution_clock::now();
+                    auto time_to_last_shrink = std::chrono::duration_cast<std::chrono::seconds>(nw - last_shrink).count();
                     //poping an object from the Q
                     {
                         std::lock_guard<std::mutex> m{_que_gurad};
                         p = _que.front();
-                        _que.pop();
+                        _que.pop_front();
+                        //shrink the q to release memory
+                        if(time_to_last_shrink >= _init_param.commit_timeout)
+                        {
+                            _que.shrink_to_fit();
+                            last_shrink = std::chrono::high_resolution_clock::now();
+                        }
                     }
 
                     uncommited.push_back(p);
@@ -255,7 +265,7 @@ class odb_worker: public odb_worker_base {
                         {
                             std::lock_guard<std::mutex> m{_que_gurad};
                             for(const auto& i : uncommited) {
-                                _que.push(i);
+                                _que.push_back(i);
                                 _sem.notify();
                             }
                             uncommited.clear();
@@ -318,7 +328,7 @@ class odb_worker: public odb_worker_base {
                                                                                                         _init_param.max_que_size)).c_str());
                 }
                 T* p = new T(obj);
-                _que.push(p);
+                _que.push_back(p);
             }
             _sem.notify();
         }
