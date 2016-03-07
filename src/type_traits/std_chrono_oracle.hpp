@@ -4,5 +4,6 @@
 #include <chrono>
 
 #pragma db value(std::chrono::system_clock::time_point) type("DATE")
+#pragma db value(std::chrono::high_resolution_clock::time_point) type("TIMESTAMP")
 
 #endif

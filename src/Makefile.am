@@ -36,4 +36,5 @@ oi_odb_utils_include_HEADERS = \
 otherincludedir = $(includedir)/oi/utils/odb_utils/type_traits/
 otherinclude_HEADERS = \
 	type_traits/std_chrono.hpp \
-	type_traits/std_chrono_oracle.hpp
+	type_traits/std_chrono_oracle.hpp \
+	type_traits/std-chrono-hight-resulation-traits.hpp
