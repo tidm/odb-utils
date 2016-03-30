@@ -2,8 +2,8 @@
 // copyright : Copyright (c) 2009-2015 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#ifndef ODB_BOOST_DATE_TIME_ORACLE_POSIX_TIME_TRAITS_HXX
-#define ODB_BOOST_DATE_TIME_ORACLE_POSIX_TIME_TRAITS_HXX
+#ifndef ODB_HIGH_RES_CHRONO_DATE_TIME_ORACLE_POSIX_TIME_TRAITS_HXX
+#define ODB_HIGH_RES_CHRONO_DATE_TIME_ORACLE_POSIX_TIME_TRAITS_HXX
 
 #include <odb/pre.hxx>
 
