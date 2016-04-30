@@ -68,6 +68,9 @@ template<class T>
 class odb_worker: public odb_worker_base {
     public:
         std::function<void(oi::exception, const T& obj)> _local_exception_handler;
+        std::function<void(const T&)>  _post_handler;
+
+
         void init(oi_database* db,
                   const odb_worker_param& prm,
                   std::function<void(oi::exception)>  handler
@@ -79,7 +82,8 @@ class odb_worker: public odb_worker_base {
         void init(oi_database* db,
                   const odb_worker_param& prm,
                   std::function<void(oi::exception, const T& obj)>  local_handler,
-                  std::function<void(oi::exception)>  handler
+                  std::function<void(oi::exception)>  handler,
+                  std::function<void(const T&)> post_handler
 
                  ) throw(oi::exception) {
             if(_state != state::NEW) {
@@ -107,6 +111,7 @@ class odb_worker: public odb_worker_base {
                 throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
             }
             _local_exception_handler  = local_handler;
+            _post_handler = post_handler;
             _exception_handler  = handler;
             _init_param = prm;
             _db = db;
@@ -176,6 +181,10 @@ class odb_worker: public odb_worker_base {
         {
             auto start = std::chrono::high_resolution_clock::now();
             _db->persist(*p);
+            if(_post_handler)
+            {
+                _post_handler(*p);
+            }
             auto end = std::chrono::high_resolution_clock::now();
             uint64_t diff_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
             {

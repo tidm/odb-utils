@@ -21,7 +21,7 @@ namespace oi
             odb_stat get_stat()throw();
 
             template<typename T>
-                void set_local_handler(std::function<void(oi::exception, const T& obj)>  handler)
+                void set_local_handler(std::function<void(oi::exception, const T& obj)>  handler, std::function<void(const T& obj)> post_callback = nullptr)
                 {
                     if(_state != odb_worker_base::state::READY)
                     {
@@ -36,7 +36,7 @@ namespace oi
                         if(it == _workers.end())
                         {
                             wr = new odb_worker<T>();
-                            wr->init(_db, _init_param, handler, _exception_handler);
+                            wr->init(_db, _init_param, handler, _exception_handler, post_callback);
                             _workers[t_name] = static_cast<odb_worker_base*>(wr);
                         }
                         else
