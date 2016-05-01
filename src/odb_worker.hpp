@@ -183,7 +183,12 @@ class odb_worker: public odb_worker_base {
             _db->persist(*p);
             if(_post_handler)
             {
-                _post_handler(*p);
+                try
+                {
+                    _post_handler(*p);
+                }
+                catch(...)
+                {}
             }
             auto end = std::chrono::high_resolution_clock::now();
             uint64_t diff_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
