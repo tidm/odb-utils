@@ -16,7 +16,9 @@ LDADD=../src/.libs/liboi_odb_utils.a \
 	$(OI_EXCEPTION_LIBS) \
 	$(BOOST_SYSTEM_LIBS)
 
-check_PROGRAMS = test_odb_worker 
-test_odb_worker_SOURCES = main.cpp req_agent_odb.cpp
-TESTS = $(check_PROGRAMS)
+check_PROGRAMS = test_post_callback test_odb_worker
+test_odb_worker_SOURCES = main.cpp req_agent_odb.cpp 
+test_post_callback_SOURCES= test_post_handler.cpp student-odb.cxx
+#TESTS = $(check_PROGRAMS)
+TESTS = test_post_callback
 
