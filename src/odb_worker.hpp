@@ -181,15 +181,6 @@ class odb_worker: public odb_worker_base {
         {
             auto start = std::chrono::high_resolution_clock::now();
             _db->persist(*p);
-            if(_post_handler)
-            {
-                try
-                {
-                    _post_handler(*p);
-                }
-                catch(...)
-                {}
-            }
             auto end = std::chrono::high_resolution_clock::now();
             uint64_t diff_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
             {
@@ -197,9 +188,42 @@ class odb_worker: public odb_worker_base {
                 _stat.update(diff_time, execution_state::SUCCESS);
             }
         }
+
+        bool do_commit(
+                std::chrono::high_resolution_clock::time_point & last_commit,
+                int & commit_counter,
+                odb::core::transaction* & trans,
+                std::vector<T*> & uncommited
+                )
+        {
+            auto nw = std::chrono::high_resolution_clock::now();
+            auto time_to_last_commit = std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count();
+            bool r  = true;
+            if(time_to_last_commit >= _init_param.commit_timeout || commit_counter > _init_param.commit_count ) {
+                try{
+                    trans->commit();
+                    for(auto i: uncommited) {
+                        if(i != nullptr)
+                        {
+                            delete i;
+                        }
+                    }
+                    uncommited.clear();
+                    commit_counter = 0;
+                    last_commit = nw;
+                    trans->reset(_db->begin());
+                }
+                catch(odb::exception& ox)
+                {
+                    r = reconnect(trans);
+                }
+            }
+            return r;
+        }
         void worker() {
             //   T obj;
             T* p = nullptr;
+            T p2;
             std::vector<T*> uncommited;
             bool wait_res = false;
             odb::core::transaction* trans = nullptr;
@@ -209,6 +233,7 @@ class odb_worker: public odb_worker_base {
                 auto last_commit = std::chrono::high_resolution_clock::now();
                 auto last_shrink = std::chrono::high_resolution_clock::now();
 
+                bool persisted = true;
                 //start of main LOOP
                 while(_state == state::READY) {
                     wait_res = _sem.wait_for(100);
@@ -216,40 +241,24 @@ class odb_worker: public odb_worker_base {
                         break;
                     }
                     //check if a commit command should be executed
-                    auto nw = std::chrono::high_resolution_clock::now();
-                    auto time_to_last_commit = std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count();
-                    if(time_to_last_commit >= _init_param.commit_timeout || commit_counter > _init_param.commit_count ) {
-                        try{
-                            trans->commit();
-                            for(auto i: uncommited) {
-                                if(i != nullptr)
-                                {
-                                    delete i;
-                                }
-                            }
-                            uncommited.clear();
-                            commit_counter = 0;
-                            last_commit = nw;
-                            trans->reset(_db->begin());
-                        }
-                        catch(odb::exception& ox)
-                        {
-                            bool r = reconnect(trans);
-                            if(!r) {
-                                break;
-                            }
-                        }
+
+                    bool r = do_commit(last_commit, commit_counter, trans, uncommited);
+                    if(!r)
+                    {
+                        break;
                     }
+
                     if(wait_res == false) {//there is no new object to store
                         continue;
                     }
 
-                    nw = std::chrono::high_resolution_clock::now();
+                    auto nw = std::chrono::high_resolution_clock::now();
                     auto time_to_last_shrink = std::chrono::duration_cast<std::chrono::seconds>(nw - last_shrink).count();
                     //poping an object from the Q
                     {
                         std::lock_guard<std::mutex> m{_que_gurad};
                         p = _que.front();
+                        p2 = *p;
                         _que.pop_front();
                         //shrink the q to release memory
                         if(time_to_last_shrink >= _init_param.commit_timeout)
@@ -262,6 +271,7 @@ class odb_worker: public odb_worker_base {
                     uncommited.push_back(p);
                     try {
                         do_persist(p);
+                        p2 =*p;
                         ++commit_counter;
                     }
                     catch(const odb::exception& e) {
@@ -273,9 +283,11 @@ class odb_worker: public odb_worker_base {
                         }
                         try {
                             do_persist(p);
+                            p2 =*p;
                             ++commit_counter;
                         }
                         catch(const odb::exception& e) {
+                            persisted = false;
                             oi::exception ox("odb", "exception" , e.what());
                             ox.add_msg(__FILE__, __FUNCTION__, " unable to persist type: % after the connection recovery",
                                     typeid(T).name());
@@ -308,6 +320,21 @@ class odb_worker: public odb_worker_base {
                             }
                             uncommited.clear();
                         }
+                    }
+                    
+                    r = do_commit(last_commit, commit_counter, trans, uncommited);
+                    if(!r)
+                    {
+                        break;
+                    }
+                    if(_post_handler && persisted )
+                    {
+                        try
+                        {
+                            _post_handler(p2);
+                        }
+                        catch(...)
+                        {}
                     }
                 }
                 try {
