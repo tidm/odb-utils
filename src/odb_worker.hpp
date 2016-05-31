@@ -199,7 +199,7 @@ class odb_worker: public odb_worker_base {
             auto nw = std::chrono::high_resolution_clock::now();
             auto time_to_last_commit = std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count();
             bool r  = true;
-            if(time_to_last_commit >= _init_param.commit_timeout || commit_counter > _init_param.commit_count ) {
+            if(time_to_last_commit >= _init_param.commit_timeout || commit_counter >= _init_param.commit_count ) {
                 try{
                     trans->commit();
                     for(auto i: uncommited) {
