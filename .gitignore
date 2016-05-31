@@ -24,4 +24,9 @@ test/main.o
 test/req_agent.sql
 test/req_agent_odb.o
 test/test_odb_worker
+test/test_post_callback
+test/test_post_callback.log
+test/test_post_callback.trs
+test/test-suite.log
+
 

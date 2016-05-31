@@ -32,7 +32,7 @@ int main()
     oi::odb_worker_param prm;
     prm.max_que_size = 100000000;
     prm.pool_size = 10;
-    prm.commit_count = 100;
+    prm.commit_count = 1;
     prm.commit_timeout = 1;
 
     std::function<void(oi::exception)> f= & ex_handler;
@@ -40,8 +40,8 @@ int main()
     std::function<void(const student&)> f3= &post_handler;
 
     worker.init(db, prm, f);
-//    worker.set_local_handler<student>(f2, f3);
-    worker.set_local_handler<student>(f2);
+    worker.set_local_handler<student>(f2, f3);
+//    worker.set_local_handler<student>(f2);
 
 
     student st1, st2;
