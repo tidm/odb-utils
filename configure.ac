@@ -5,7 +5,7 @@ LT_LANG([C++])
 AC_LANG([C++])
 AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
-AM_INIT_AUTOMAKE([oi_odb_utils], [7.0.0])
+AM_INIT_AUTOMAKE
 AM_SILENT_RULES([yes])
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
