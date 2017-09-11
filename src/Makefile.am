@@ -30,7 +30,8 @@ oi_odb_utils_include_HEADERS = \
 	odb_stat.hpp \
 	odb_worker.hpp \
 	odb_async_worker.hpp \
-	odb_headers.hpp
+	odb_headers.hpp \
+	odb_utility.hpp
 	
 
 otherincludedir = $(includedir)/oi/utils/odb_utils/type_traits/
