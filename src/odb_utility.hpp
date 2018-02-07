@@ -39,18 +39,17 @@ class odb_travers {
             }
         }
         template <typename T,typename TY,typename TZ>
-        static void get_def_map(odb::database* _db,std::map<TY,TZ>& o_map_def) {
+        static void get_def_map(odb::database* _db,odb::query<T> query,std::map<TY,TZ>& o_map_def) {
             typedef odb::result<T> def_result;
-            typedef odb::query<T>  def_query;
             if (_db == NULL) {
                 oi::exception ox(__FILE__,__FUNCTION__,"the db is null");
                 throw ox;
             }
             try {
                 odb::transaction t (_db->begin ());
-                def_result def_list_result (_db->query<T> (def_query::id > 0));
+                def_result def_list_result (_db->query<T> (query));
                 for (T& p: def_list_result) {
-                    o_map_def.insert(std::pair<std::string,int>(p.get_key(),p.get_value()));
+                    o_map_def.insert(std::pair<TY,TZ>(p.get_key(),p.get_value()));
                 }
                 t.commit();
             }
@@ -65,7 +64,32 @@ class odb_travers {
                 throw ox;
             }
         }
-
+        template <typename T,typename TY,typename TZ>
+        static void get_def_map(odb::database* _db,std::map<TY,TZ>& o_map_def) {
+            typedef odb::result<T> def_result;
+            if (_db == NULL) {
+                oi::exception ox(__FILE__,__FUNCTION__,"the db is null");
+                throw ox;
+            }
+            try {
+                odb::transaction t (_db->begin ());
+                def_result def_list_result (_db->query<T>());
+                for (T& p: def_list_result) {
+                    o_map_def.insert(std::pair<TY,TZ>(p.get_key(),p.get_value()));
+                }
+                t.commit();
+            }
+            catch(odb::exception& dx) {
+                oi::exception ox("std","exception",dx.what());
+                ox.add_msg(__FILE__,__FUNCTION__,"unable to get def list from database");
+                throw ox;
+            }
+            catch(std::exception& sx) {
+                oi::exception ox("std","exception",sx.what());
+                ox.add_msg(__FILE__,__FUNCTION__,"unable to get def list from database");
+                throw ox;
+            }
+        }
 
         template <typename T >
         static void travers (odb::database* _db,std::function<void(T&)> func) {
