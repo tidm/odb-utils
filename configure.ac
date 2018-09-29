@@ -1,5 +1,5 @@
 AC_PREREQ([2.67])
-AC_INIT([oi_odb_utils], [7.0], [oi@tidm.ir])
+AC_INIT([liboi_odb_utils], [7.0.0], [oi@tidm.ir])
 LT_INIT
 LT_LANG([C++])
 AC_LANG([C++])

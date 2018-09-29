@@ -1,6 +1,6 @@
 ACLCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 AM_CPPFLAGS = \
-	--pedantic -Wall -Werror -Wno-unknown-pragmas -Wno-deprecated-declarations\
+	--pedantic -Wall -Werror -Wno-unknown-pragmas -Wno-deprecated-declarations \
 	$(ODB_CFLAGS) \
 	$(ODB_ORACLE_CFLAGS) \
 	$(ODB_BOOST_CFLAGS) \
@@ -23,7 +23,7 @@ liboi_odb_utils_la_LIBADD = \
 	$(ODB_ORACLE_LIBS) \
 	$(ODB_BOOST_LIBS) \
 	$(OI_COMMON_LIBS) \
-	$(OI_EXCEPTION_LIBS) 
+	$(OI_EXCEPTION_LIBS)
 
 oi_odb_utils_includedir = $(includedir)/oi/utils/odb_utils/
 oi_odb_utils_include_HEADERS = \
@@ -32,7 +32,6 @@ oi_odb_utils_include_HEADERS = \
 	odb_async_worker.hpp \
 	odb_headers.hpp \
 	odb_utility.hpp
-	
 
 otherincludedir = $(includedir)/oi/utils/odb_utils/type_traits/
 otherinclude_HEADERS = \
