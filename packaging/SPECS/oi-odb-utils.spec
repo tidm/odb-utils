@@ -19,8 +19,8 @@ BuildRequires: make
 Requires:       liboi_exception >= 7.0
 Requires:       liboi_common >= 7.2
 Requires:       libodb >= 2.4
-Requires:       libodb_oracle >= 2.4
-Requires:       libodb_boost >= 2.4
+Requires:       libodb-oracle >= 2.4
+Requires:       libodb-boost >= 2.4
 
 %package devel
 Summary:        Development files for using ${name}
@@ -29,9 +29,9 @@ Requires:       %{name} = %{version}-%{release}
 Requires:       pkgconfig
 Requires:       liboi_exception-devel >= 7.0
 Requires:       liboi_common-devel >= 7.2
-Requires:       libodb-devel-devel >= 2.4
-Requires:       libodb_oracle-devel >= 2.4
-Requires:       libodb_boost-devel >= 2.4
+Requires:       libodb-devel >= 2.4
+Requires:       libodb-oracle-devel >= 2.4
+Requires:       libodb-boost-devel >= 2.4
 Provides:       %{name}-devel = %{version}-%{release}
 
 
