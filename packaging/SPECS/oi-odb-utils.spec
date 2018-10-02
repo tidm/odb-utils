@@ -1,4 +1,4 @@
-%define name liboi_odb_utils
+%define name liboi-odb-utils
 %define version 7.0.0
 %define release 1
 
@@ -16,8 +16,8 @@ BuildRequires: gcc
 BuildRequires: libtool
 BuildRequires: make
 
-Requires:       liboi_exception >= 7.0
-Requires:       liboi_common >= 7.2
+Requires:       liboi-exception >= 7.0
+Requires:       liboi-common >= 7.2
 Requires:       libodb >= 2.4
 Requires:       libodb-oracle >= 2.4
 Requires:       libodb-boost >= 2.4
@@ -27,8 +27,8 @@ Summary:        Development files for using ${name}
 Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 Requires:       pkgconfig
-Requires:       liboi_exception-devel >= 7.0
-Requires:       liboi_common-devel >= 7.2
+Requires:       liboi-exception-devel >= 7.0
+Requires:       liboi-common-devel >= 7.2
 Requires:       libodb-devel >= 2.4
 Requires:       libodb-oracle-devel >= 2.4
 Requires:       libodb-boost-devel >= 2.4
