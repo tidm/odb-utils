@@ -12,14 +12,9 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Summary:        Operational Intelligence ODB Utilities
 Group:          Development/Libraries
 
-BuildRequires: gcc-c++
+BuildRequires: gcc
 BuildRequires: libtool
 BuildRequires: make
-BuildRequires: liboi-exception-devel >= 7.0
-BuildRequires: liboi-common-devel >= 7.2
-BuildRequires: libodb-devel >= 2.4
-BuildRequires: libodb-oracle-devel >= 2.4
-BuildRequires: libodb-boost-devel >= 2.4
 
 Requires:       liboi-exception >= 7.0
 Requires:       liboi-common >= 7.2
