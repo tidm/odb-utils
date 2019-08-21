@@ -13,7 +13,6 @@ AC_CONFIG_HEADERS([config.h])
 
 PKG_CHECK_MODULES([ODB], [libodb >= 2.4])
 PKG_CHECK_MODULES([ODB_ORACLE], [libodb-oracle >= 2.4])
-PKG_CHECK_MODULES([ODB_BOOST], [libodb-boost >= 2.4])
 PKG_CHECK_MODULES([OI_COMMON], [oi_common >= 7.1])
 PKG_CHECK_MODULES([OI_EXCEPTION], [oi_exception >= 7.0])
 
