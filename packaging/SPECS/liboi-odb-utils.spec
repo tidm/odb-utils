@@ -1,6 +1,6 @@
 %define name liboi-odb-utils
 %define version 7.0.0
-%define release 1
+%define release 2
 
 Name:           %{name}
 Version:        %{version}
@@ -12,7 +12,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Summary:        Operational Intelligence ODB Utilities
 Group:          Development/Libraries
 
-BuildRequires: gcc
+BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: make
 
@@ -20,7 +20,6 @@ Requires:       liboi-exception >= 7.0
 Requires:       liboi-common >= 7.2
 Requires:       libodb >= 2.4
 Requires:       libodb-oracle >= 2.4
-Requires:       libodb-boost >= 2.4
 
 %package devel
 Summary:        Development files for using ${name}
@@ -31,7 +30,6 @@ Requires:       liboi-exception-devel >= 7.0
 Requires:       liboi-common-devel >= 7.2
 Requires:       libodb-devel >= 2.4
 Requires:       libodb-oracle-devel >= 2.4
-Requires:       libodb-boost-devel >= 2.4
 Provides:       %{name}-devel = %{version}-%{release}
 
 
@@ -76,5 +74,8 @@ rm -rf %{buildroot}
 %exclude %{_libdir}/*.so.*
 
 %changelog
+* Wed Aug 2019 Soroush Rabiei <rabiei@tidm.ir> 7.0-2
+- Remove ODB Boost dependency (release 2)
+
 * Sat Sep 29 2018 Soroush Rabiei <rabiei@tidm.ir> 7.0-1
 - Initial package for oi-odb-utils library (release 1)
