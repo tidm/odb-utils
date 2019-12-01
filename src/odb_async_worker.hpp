@@ -19,6 +19,7 @@ namespace oi
             odb_async_worker();
             void init(oi_database* db, const odb_worker_param& prm, std::function<void(oi::exception)>  handler ) throw(oi::exception);
             odb_stat get_stat()throw();
+            std::map<std::string,odb_stat> get_detailed_stat()throw();
 
             template<typename T>
                 void set_local_handler(std::function<void(oi::exception, const T& obj)>  handler, std::function<void(const T& obj)> post_callback = nullptr)

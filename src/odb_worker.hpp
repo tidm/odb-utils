@@ -28,6 +28,7 @@ struct odb_worker_param {
     int commit_timeout; // second
     odb_worker_param();
     std::string to_string()const;
+    bool blocking_mode;
 };
 std::ostream operator<<(std::ostream& os, const odb_worker_param& prm);
 
@@ -40,6 +41,7 @@ class odb_worker_base {
         oi_database* _db;
 
         oi::semaphore _sem;
+        oi::semaphore _sem_full;
         std::mutex    _que_gurad;
 
         std::vector<std::thread> _worker_threads;
@@ -134,9 +136,12 @@ class odb_worker: public odb_worker_base {
             if(_state != state::READY) {
                 throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
             }
+            if(_init_param.blocking_mode){
+                _sem_full.wait();
+            }
             {
                 std::lock_guard<std::mutex> m{_que_gurad};
-                if(_que.size() >= _init_param.max_que_size) {
+                if(_que.size() >= _init_param.max_que_size ) {
                     throw oi::exception(__FILE__, __FUNCTION__,
                             (std::string("maximum queue size exceeded! max limit is ") + std::to_string(
                                                                                                         _init_param.max_que_size)).c_str());
@@ -255,17 +260,19 @@ class odb_worker: public odb_worker_base {
                     auto nw = std::chrono::high_resolution_clock::now();
                     auto time_to_last_shrink = std::chrono::duration_cast<std::chrono::seconds>(nw - last_shrink).count();
                     //poping an object from the Q
+                    std::unique_lock<std::mutex> m{_que_gurad};
+                    p = _que.front();
+                    p2 = *p;
+                    _que.pop_front();
+                    //shrink the q to release memory
+                    if(time_to_last_shrink >= _init_param.commit_timeout)
                     {
-                        std::lock_guard<std::mutex> m{_que_gurad};
-                        p = _que.front();
-                        p2 = *p;
-                        _que.pop_front();
-                        //shrink the q to release memory
-                        if(time_to_last_shrink >= _init_param.commit_timeout)
-                        {
-                            _que.shrink_to_fit();
-                            last_shrink = std::chrono::high_resolution_clock::now();
-                        }
+                        _que.shrink_to_fit();
+                        last_shrink = std::chrono::high_resolution_clock::now();
+                    }
+                    m.unlock();
+                    if(_init_param.blocking_mode){
+                        _sem_full.notify();
                     }
 
                     uncommited.push_back(p);
@@ -312,14 +319,16 @@ class odb_worker: public odb_worker_base {
                                 _stat.update(0, execution_state::FAILED);
                             }
                         }
-                        {
-                            std::lock_guard<std::mutex> m{_que_gurad};
-                            for(const auto& i : uncommited) {
-                                _que.push_back(i);
-                                _sem.notify();
+                        for(const auto& i : uncommited) {
+                            if(_init_param.blocking_mode){
+                                _sem_full.wait();
                             }
-                            uncommited.clear();
+                            std::unique_lock<std::mutex> m{_que_gurad};
+                            _que.push_back(i);
+                            _sem.notify();
+                            m.unlock();
                         }
+                        uncommited.clear();
                     }
                     
                     r = do_commit(last_commit, commit_counter, trans, uncommited);

@@ -5,13 +5,15 @@ odb_worker_param::odb_worker_param() {
     pool_size = 0;
     commit_timeout = 0;
     commit_count = 0;
+    blocking_mode = false;
 }
 std::string odb_worker_param::to_string()const {
     std::stringstream sstr;
     sstr << "max_que_size: " << max_que_size
          << "pool_size: " << pool_size
          << "commit_count: " << commit_count
-         << "commit_timeout: " << commit_timeout;
+         << "commit_timeout: " << commit_timeout
+         << "blocking_mode: " << (blocking_mode ? "true": "false");
     return sstr.str();
 }
 /*
@@ -51,6 +53,9 @@ void odb_worker_base::init(oi_database* db,
     }
     _exception_handler  = handler;
     _init_param = prm;
+    if(_init_param.blocking_mode){
+        _sem_full.set_init_size(_init_param.max_que_size);
+    }
     _db = db;
     _state = state::READY;
     for(int i=0; i< _init_param.pool_size; i++) {
