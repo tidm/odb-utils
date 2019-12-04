@@ -77,8 +77,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = test_post_callback$(EXEEXT) test_odb_worker$(EXEEXT)
-TESTS = test_post_callback$(EXEEXT)
+check_PROGRAMS = test_post_callback$(EXEEXT) blocking_mode$(EXEEXT) \
+	blocking_small_tbs$(EXEEXT) \
+	blocking_small_tbs_drop_failed$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp $(top_srcdir)/test-driver
@@ -93,22 +94,40 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am_test_odb_worker_OBJECTS = main.$(OBJEXT) req_agent_odb.$(OBJEXT)
-test_odb_worker_OBJECTS = $(am_test_odb_worker_OBJECTS)
-test_odb_worker_LDADD = $(LDADD)
+am_blocking_mode_OBJECTS = blocking_mode.$(OBJEXT) \
+	req_agent_odb.$(OBJEXT) db_util.$(OBJEXT)
+blocking_mode_OBJECTS = $(am_blocking_mode_OBJECTS)
+blocking_mode_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
-test_odb_worker_DEPENDENCIES = ../src/.libs/liboi_odb_utils.a \
+blocking_mode_DEPENDENCIES = ../src/.libs/liboi_odb_utils.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_blocking_small_tbs_OBJECTS = blocking_small_tbs.$(OBJEXT) \
+	req_agent_odb.$(OBJEXT) db_util.$(OBJEXT)
+blocking_small_tbs_OBJECTS = $(am_blocking_small_tbs_OBJECTS)
+blocking_small_tbs_LDADD = $(LDADD)
+blocking_small_tbs_DEPENDENCIES = ../src/.libs/liboi_odb_utils.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_blocking_small_tbs_drop_failed_OBJECTS =  \
+	blocking_small_tbs_drop_failed.$(OBJEXT) \
+	req_agent_odb.$(OBJEXT) db_util.$(OBJEXT)
+blocking_small_tbs_drop_failed_OBJECTS =  \
+	$(am_blocking_small_tbs_drop_failed_OBJECTS)
+blocking_small_tbs_drop_failed_LDADD = $(LDADD)
+blocking_small_tbs_drop_failed_DEPENDENCIES =  \
+	../src/.libs/liboi_odb_utils.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_test_post_callback_OBJECTS = test_post_handler.$(OBJEXT) \
 	student-odb.$(OBJEXT)
 test_post_callback_OBJECTS = $(am_test_post_callback_OBJECTS)
 test_post_callback_LDADD = $(LDADD)
-test_post_callback_DEPENDENCIES = ../src/.libs/liboi_odb_utils.a \
+test_post_callback_DEPENDENCIES = ../src/.libs/liboi_odb_utils.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -145,8 +164,11 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(test_odb_worker_SOURCES) $(test_post_callback_SOURCES)
-DIST_SOURCES = $(test_odb_worker_SOURCES) \
+SOURCES = $(blocking_mode_SOURCES) $(blocking_small_tbs_SOURCES) \
+	$(blocking_small_tbs_drop_failed_SOURCES) \
+	$(test_post_callback_SOURCES)
+DIST_SOURCES = $(blocking_mode_SOURCES) $(blocking_small_tbs_SOURCES) \
+	$(blocking_small_tbs_drop_failed_SOURCES) \
 	$(test_post_callback_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -522,15 +544,18 @@ AM_CPPFLAGS = -I../src/ -Wall -Werror -Wno-unknown-pragmas\
 	$(ODB_ORACLE_CFLAGS) \
 	$(BOOST_SYSTEM_CFLAGS)
 
-LDADD = ../src/.libs/liboi_odb_utils.a \
+LDADD = ../src/.libs/liboi_odb_utils.la \
 	$(ODB_LIBS) \
 	$(ODB_ORACLE_LIBS) \
 	$(OI_COMMON_LIBS) \
 	$(OI_EXCEPTION_LIBS) \
 	$(BOOST_SYSTEM_LIBS)
 
-test_odb_worker_SOURCES = main.cpp req_agent_odb.cpp 
 test_post_callback_SOURCES = test_post_handler.cpp student-odb.cxx
+blocking_mode_SOURCES = blocking_mode.cpp req_agent_odb.cpp  db_util.cpp
+blocking_small_tbs_SOURCES = blocking_small_tbs.cpp req_agent_odb.cpp db_util.cpp
+blocking_small_tbs_drop_failed_SOURCES = blocking_small_tbs_drop_failed.cpp req_agent_odb.cpp  db_util.cpp
+TESTS = $(check_PROGRAMS)
 all: all-am
 
 .SUFFIXES:
@@ -575,9 +600,17 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-test_odb_worker$(EXEEXT): $(test_odb_worker_OBJECTS) $(test_odb_worker_DEPENDENCIES) $(EXTRA_test_odb_worker_DEPENDENCIES) 
-	@rm -f test_odb_worker$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(test_odb_worker_OBJECTS) $(test_odb_worker_LDADD) $(LIBS)
+blocking_mode$(EXEEXT): $(blocking_mode_OBJECTS) $(blocking_mode_DEPENDENCIES) $(EXTRA_blocking_mode_DEPENDENCIES) 
+	@rm -f blocking_mode$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(blocking_mode_OBJECTS) $(blocking_mode_LDADD) $(LIBS)
+
+blocking_small_tbs$(EXEEXT): $(blocking_small_tbs_OBJECTS) $(blocking_small_tbs_DEPENDENCIES) $(EXTRA_blocking_small_tbs_DEPENDENCIES) 
+	@rm -f blocking_small_tbs$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(blocking_small_tbs_OBJECTS) $(blocking_small_tbs_LDADD) $(LIBS)
+
+blocking_small_tbs_drop_failed$(EXEEXT): $(blocking_small_tbs_drop_failed_OBJECTS) $(blocking_small_tbs_drop_failed_DEPENDENCIES) $(EXTRA_blocking_small_tbs_drop_failed_DEPENDENCIES) 
+	@rm -f blocking_small_tbs_drop_failed$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(blocking_small_tbs_drop_failed_OBJECTS) $(blocking_small_tbs_drop_failed_LDADD) $(LIBS)
 
 test_post_callback$(EXEEXT): $(test_post_callback_OBJECTS) $(test_post_callback_DEPENDENCIES) $(EXTRA_test_post_callback_DEPENDENCIES) 
 	@rm -f test_post_callback$(EXEEXT)
@@ -589,7 +622,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blocking_mode.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blocking_small_tbs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blocking_small_tbs_drop_failed.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/db_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req_agent_odb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/student-odb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_post_handler.Po@am__quote@
@@ -842,6 +878,27 @@ test_post_callback.log: test_post_callback$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+blocking_mode.log: blocking_mode$(EXEEXT)
+	@p='blocking_mode$(EXEEXT)'; \
+	b='blocking_mode'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+blocking_small_tbs.log: blocking_small_tbs$(EXEEXT)
+	@p='blocking_small_tbs$(EXEEXT)'; \
+	b='blocking_small_tbs'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+blocking_small_tbs_drop_failed.log: blocking_small_tbs_drop_failed$(EXEEXT)
+	@p='blocking_small_tbs_drop_failed$(EXEEXT)'; \
+	b='blocking_small_tbs_drop_failed'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1013,6 +1070,7 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	recheck tags tags-am uninstall uninstall-am
 
+#TESTS = test_post_callback
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

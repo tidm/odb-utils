@@ -1,0 +1,69 @@
+image: ci.tosanidm.net/centos:7.5.1804
+
+stages:
+  - build
+  - test
+  - deploy
+
+before_script:
+    - export LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib/
+
+.script1: &install_dependencies |
+    cur_dir=$PWD
+    cd /mnt/repo
+    ./install.sh
+    yum-config-manager --disable \*
+    yum-config-manager --enable \oi
+    yum makecache
+    yum -y install autoconf automake build-essential libtool gcc-c++ make 
+    yum -y install  liboi-exception-devel liboi-common-devel libodb-boost-devel libodb-oracle-devel libodb-devel boost169-devel
+    cd $cur_dir
+ 
+.script2: &put_to_server |
+    mv /root/rpmbuild/RPMS/ ./packaging/
+    mv /root/rpmbuild/SRPMS/ ./packaging/
+    tar -cjf ${CI_JOB_NAME}-odb_utils.tar.bzip2 ./packaging/
+    curl -T ${CI_JOB_NAME}-odb_utils.tar.bzip2 --ftp-create-dirs ftp://ci.tosanidm.net/pub/runners-deployed-rpms/loyalty/
+
+etc_build:
+  stage: build
+  script:
+    - curl -o repository-etc-sepandar.tar ftp://ci.tosanidm.net/pub/repository-etc-sepandar.tar
+    - tar -xf repository-etc-sepandar.tar -C /mnt/
+    - *install_dependencies
+    - echo "Building app for sepandar etc..."
+    - ./configure --with-boost=/usr/include/boost169/ LDFLAGS=-L/usr/lib64/boost169 CPPFLAGS=-I/usr/include/boost169 
+    - make -j10
+    - yum clean all
+
+etc_test:
+  stage: test
+  script:
+    - curl -o repository-etc-sepandar.tar ftp://ci.tosanidm.net/pub/repository-etc-sepandar.tar
+    - tar -xf repository-etc-sepandar.tar -C /mnt/
+    - *install_dependencies
+    - ./configure --with-boost=/usr/include/boost169/ LDFLAGS=-L/usr/lib64/boost169 CPPFLAGS=-I/usr/include/boost169 
+    - make check -j10
+    - yum clean all
+
+etc_deploy:
+  stage: deploy
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - packaging/RPMS/
+      - packaging/SRPMS/*.rpm
+  script:
+    - yum -y install rpm-build
+    - curl -o repository-etc-sepandar.tar ftp://ci.tosanidm.net/pub/repository-etc-sepandar.tar
+    - tar -xf repository-etc-sepandar.tar -C /mnt/
+    - *install_dependencies
+    - echo "Deploy to staging server for etc sepandar"
+    - ./configure --with-boost=/usr/include/boost169/ LDFLAGS=-L/usr/lib64/boost169 CPPFLAGS=-I/usr/include/boost169 
+    - make dist
+    - mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+    - cp ./packaging/SPECS/*.spec ~/rpmbuild/SPECS/
+    - mv ./*.tar.gz ~/rpmbuild/SOURCES/
+    - rpmbuild -ba --with sepandar --with etc ~/rpmbuild/SPECS/*.spec
+    - *put_to_server
+    - yum clean all

@@ -28,6 +28,8 @@ struct odb_worker_param {
     int commit_timeout; // second
     odb_worker_param();
     std::string to_string()const;
+    bool blocking_mode;
+    bool drop_failed;
 };
 std::ostream operator<<(std::ostream& os, const odb_worker_param& prm);
 
@@ -40,6 +42,7 @@ class odb_worker_base {
         oi_database* _db;
 
         oi::semaphore _sem;
+        oi::semaphore _sem_full;
         std::mutex    _que_gurad;
 
         std::vector<std::thread> _worker_threads;
@@ -86,43 +89,21 @@ class odb_worker: public odb_worker_base {
                   std::function<void(const T&)> post_handler
 
                  ) throw(oi::exception) {
-            if(_state != state::NEW) {
-                throw oi::exception(__FILE__, __FUNCTION__,
-                                    "invalid odb_worker_base state(re-initialization or initialization of a finalized worker)");
-            }
-            if(db == nullptr) {
-                throw oi::exception(__FILE__, __FUNCTION__, "database pointer is null");
-            }
-            if( prm.pool_size <= 0 ||
-                    prm.commit_count <= 0 ||
-                    prm.commit_timeout <= 0 ||
-                    prm.max_que_size <= 0 ||
-                    prm.pool_size > MAX_POOL_SIZE ||
-                    prm.max_que_size> MAX_QUE_SIZE ||
-                    prm.commit_timeout > MAX_COMMIT_TIMEOUT ||
-                    handler == nullptr
-              ) {
-                std::stringstream sstr;
-                sstr << "invalid initialization parameter: " << prm.to_string().c_str()
-                     << "  0 <= pool_size < " << MAX_POOL_SIZE
-                     << "  0 <= commit_count < " << MAX_COMMIT_COUNT
-                     << "  0 <= commit_timeout < " << MAX_COMMIT_TIMEOUT
-                     << "  exception_handler != null ";
-                throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
-            }
+            _init_param = prm;
             _local_exception_handler  = local_handler;
             _post_handler = post_handler;
-            _exception_handler  = handler;
-            _init_param = prm;
-            _db = db;
-            _state = state::READY;
-            for(int i=0; i< _init_param.pool_size; i++) {
-                _worker_threads.emplace_back(&odb_worker_base::worker, this);
-            }
+//           _state = state::READY;
+//            for(int i=0; i< _init_param.pool_size; i++) {
+//                _worker_threads.emplace_back(&odb_worker_base::worker, this);
+//            }
+            odb_worker_base::init(db, prm, handler);
         }
 
 
         odb_stat get_stat()throw() {
+            if(_state != odb_worker_base::state::READY){
+                return odb_stat();
+            }
             odb_stat temp = odb_worker_base::get_stat();
             {
                 std::lock_guard<std::mutex> m{_que_gurad};
@@ -134,9 +115,12 @@ class odb_worker: public odb_worker_base {
             if(_state != state::READY) {
                 throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
             }
+            if(_init_param.blocking_mode){
+                _sem_full.wait();
+            }
             {
                 std::lock_guard<std::mutex> m{_que_gurad};
-                if(_que.size() >= _init_param.max_que_size) {
+                if(_que.size() >= _init_param.max_que_size ) {
                     throw oi::exception(__FILE__, __FUNCTION__,
                             (std::string("maximum queue size exceeded! max limit is ") + std::to_string(
                                                                                                         _init_param.max_que_size)).c_str());
@@ -150,7 +134,15 @@ class odb_worker: public odb_worker_base {
         std::deque<T*> _que;
         bool reconnect(odb::core::transaction* & trans )
         {
-            while(_state == state::READY)  {
+            std::size_t q_size = 0;
+            while(true)  {
+                std::cerr << "RECONNENCTING..." << std::endl;
+                std::unique_lock<std::mutex> m{_que_gurad};
+                q_size = _que.size();
+                m.unlock();
+                if(_state != state::READY && q_size == 0){
+                    break;
+                }
                 try {
                     {
                         std::lock_guard<std::mutex> m{_stat_gurad};
@@ -165,11 +157,12 @@ class odb_worker: public odb_worker_base {
                     break;
                 }
                 catch(...) {
+                    std::cerr << "UNABLE TO RECOOENECT" << std::endl;
                     trans = nullptr;
                 }
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-            if(_state != state::READY) {
+            if(_state != state::READY && q_size == 0) {
                 return false ;
             }
             else{
@@ -203,6 +196,9 @@ class odb_worker: public odb_worker_base {
                 try{
                     trans->commit();
                     for(auto i: uncommited) {
+                        if(_init_param.blocking_mode){
+                            _sem_full.notify();
+                        }
                         if(i != nullptr)
                         {
                             delete i;
@@ -235,19 +231,17 @@ class odb_worker: public odb_worker_base {
 
                 bool persisted = true;
                 //start of main LOOP
-                while(_state == state::READY) {
+                while(true) {
                     wait_res = _sem.wait_for(100);
-                    if(_state != state::READY) {//someone has called finalize()
+                    if(_state != state::READY and wait_res == false) {//someone has called finalize()
                         break;
                     }
                     //check if a commit command should be executed
-
                     bool r = do_commit(last_commit, commit_counter, trans, uncommited);
                     if(!r)
                     {
                         break;
                     }
-
                     if(wait_res == false) {//there is no new object to store
                         continue;
                     }
@@ -255,18 +249,17 @@ class odb_worker: public odb_worker_base {
                     auto nw = std::chrono::high_resolution_clock::now();
                     auto time_to_last_shrink = std::chrono::duration_cast<std::chrono::seconds>(nw - last_shrink).count();
                     //poping an object from the Q
+                    std::unique_lock<std::mutex> m{_que_gurad};
+                    p = _que.front();
+                    p2 = *p;
+                    _que.pop_front();
+                    //shrink the q to release memory
+                    if(time_to_last_shrink >= _init_param.commit_timeout)
                     {
-                        std::lock_guard<std::mutex> m{_que_gurad};
-                        p = _que.front();
-                        p2 = *p;
-                        _que.pop_front();
-                        //shrink the q to release memory
-                        if(time_to_last_shrink >= _init_param.commit_timeout)
-                        {
-                            _que.shrink_to_fit();
-                            last_shrink = std::chrono::high_resolution_clock::now();
-                        }
+                        _que.shrink_to_fit();
+                        last_shrink = std::chrono::high_resolution_clock::now();
                     }
+                    m.unlock();
 
                     uncommited.push_back(p);
                     try {
@@ -275,29 +268,26 @@ class odb_worker: public odb_worker_base {
                         ++commit_counter;
                     }
                     catch(const odb::exception& e) {
-                        //do reconnection
-
-                        bool r = reconnect(trans);
-                        if(!r) {
-                            break;
-                        }
-                        try {
-                            do_persist(p);
-                            p2 =*p;
-                            ++commit_counter;
-                        }
-                        catch(const odb::exception& e) {
-                            persisted = false;
-                            oi::exception ox("odb", "exception" , e.what());
-                            ox.add_msg(__FILE__, __FUNCTION__, " unable to persist type: % after the connection recovery",
-                                    typeid(T).name());
+                        persisted = false;
+                        oi::exception ox("odb", "exception" , e.what());
+                        ox.add_msg(__FILE__, __FUNCTION__, " unable to persist type: % ", typeid(T).name());
+                        try{
                             if(_local_exception_handler && p != nullptr) {
                                 _local_exception_handler(ox, *p);
                             }
                             else {
                                 _exception_handler(ox );
                             }
-                            //remove the currect object because its persisting throws exception even after reconnection
+                        }catch(...){}
+                        bool r = reconnect(trans);
+                        if(!r) {
+                            break;
+                        }
+                        if(_init_param.drop_failed){
+                            if(_init_param.blocking_mode){
+                                _sem_full.notify();
+                            }
+                            std::cerr << "DROPPED" << std::endl;
                             if(p != nullptr)
                             {
                                 delete p;
@@ -306,22 +296,19 @@ class odb_worker: public odb_worker_base {
                             if(uncommited.size() > 0) {
                                 uncommited.pop_back();
                             }
-
-                            {
-                                std::lock_guard<std::mutex> m{_stat_gurad};
-                                _stat.update(0, execution_state::FAILED);
-                            }
                         }
                         {
-                            std::lock_guard<std::mutex> m{_que_gurad};
-                            for(const auto& i : uncommited) {
-                                _que.push_back(i);
-                                _sem.notify();
-                            }
-                            uncommited.clear();
+                            std::lock_guard<std::mutex> m{_stat_gurad};
+                            _stat.update(0, execution_state::FAILED);
                         }
+                        for(const auto& i : uncommited) {
+                            std::unique_lock<std::mutex> m{_que_gurad};
+                            _que.push_back(i);
+                            _sem.notify();
+                            m.unlock();
+                        }
+                        uncommited.clear();
                     }
-                    
                     r = do_commit(last_commit, commit_counter, trans, uncommited);
                     if(!r)
                     {

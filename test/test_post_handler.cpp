@@ -1,8 +1,12 @@
 #include "student.hpp"
 #include "student-odb.hpp"
+#include <stdlib.h>
+#include <unistd.h>
 #include "../src/odb_async_worker.hpp"
 
 oi::odb_async_worker  worker;
+oi_database* db_sys;
+std::string user;
 void ex_handler(oi::exception ex)
 {
   std::cerr << "#### generic handler" << std::endl;
@@ -27,7 +31,7 @@ int main()
 {
 
     oi_database * db;
-    db  = new oi_database("HESSAM_TEST", "ht", "10.0.0.117:1521/oracler2");
+    db  = new oi_database("HESSAM_TEST_ETC", "hte", "10.0.0.166:1521/oi");
 
     oi::odb_worker_param prm;
     prm.max_que_size = 100000000;
@@ -50,6 +54,7 @@ int main()
 
     worker.persist<student>(st1);
     worker.persist<student>(st2);
+    worker.finalize();
 
     sleep(4);
     return 0;

@@ -48,7 +48,9 @@ namespace oi
 
     odb_stat odb_async_worker::get_stat()throw()
     {
-        
+        if(_state != odb_worker_base::state::READY){
+            return odb_stat();
+        }
         std::map<std::string, odb_worker_base*>::iterator it;
         odb_stat st, aggr_st;
         if(_state == odb_worker_base::state::READY)
@@ -63,6 +65,23 @@ namespace oi
             }
         }
         return aggr_st;
+    }
+
+    std::map<std::string,odb_stat> odb_async_worker::get_detailed_stat()throw(){
+        if(_state != odb_worker_base::state::READY){
+            return std::map<std::string,odb_stat>();
+        }
+        std::map<std::string, odb_worker_base*>::iterator it;
+        std::map<std::string,odb_stat> st;
+        if(_state == odb_worker_base::state::READY)
+        {
+            std::lock_guard<std::mutex> m(_workers_guard);
+            for( it = _workers.begin(); it != _workers.end(); it++)
+            {
+                st[it->first] = it->second->get_stat();
+            }
+        }
+        return st;
     }
 
     void odb_async_worker::finalize()throw ()
