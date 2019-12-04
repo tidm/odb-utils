@@ -16,7 +16,7 @@ before_script:
     yum-config-manager --enable \oi
     yum makecache
     yum -y install autoconf automake build-essential libtool gcc-c++ make 
-    yum -y install  liboi-exception-devel liboi-common-devel libodb-boost libodb-oracle libodb boost169-devel
+    yum -y install  liboi-exception-devel liboi-common-devel libodb-boost-devel libodb-oracle-devel libodb-devel boost169-devel
     cd $cur_dir
  
 .script2: &put_to_server |
