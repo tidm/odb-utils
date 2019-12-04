@@ -8,6 +8,7 @@
 // Begin prologue.
 //
 #include <type_traits/std_chrono.hpp>
+#include <cstddef>
 //
 // End prologue.
 

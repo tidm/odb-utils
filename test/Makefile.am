@@ -9,16 +9,19 @@ AM_CPPFLAGS = -I../src/ -Wall -Werror -Wno-unknown-pragmas\
 	$(BOOST_SYSTEM_CFLAGS)
 
 
-LDADD=../src/.libs/liboi_odb_utils.a \
+LDADD=../src/.libs/liboi_odb_utils.la \
 	$(ODB_LIBS) \
 	$(ODB_ORACLE_LIBS) \
 	$(OI_COMMON_LIBS) \
 	$(OI_EXCEPTION_LIBS) \
 	$(BOOST_SYSTEM_LIBS)
 
-check_PROGRAMS = test_post_callback test_odb_worker
-test_odb_worker_SOURCES = main.cpp req_agent_odb.cpp 
+check_PROGRAMS = test_post_callback blocking_mode blocking_small_tbs blocking_small_tbs_drop_failed
 test_post_callback_SOURCES= test_post_handler.cpp student-odb.cxx
-#TESTS = $(check_PROGRAMS)
-TESTS = test_post_callback
+blocking_mode_SOURCES = blocking_mode.cpp req_agent_odb.cpp  db_util.cpp
+blocking_small_tbs_SOURCES = blocking_small_tbs.cpp req_agent_odb.cpp db_util.cpp
+blocking_small_tbs_drop_failed_SOURCES = blocking_small_tbs_drop_failed.cpp req_agent_odb.cpp  db_util.cpp
+
+TESTS = $(check_PROGRAMS)
+#TESTS = test_post_callback
 

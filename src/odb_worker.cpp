@@ -5,7 +5,8 @@ odb_worker_param::odb_worker_param() {
     pool_size = 0;
     commit_timeout = 0;
     commit_count = 0;
-    blocking_mode = false;
+    blocking_mode = true;
+    drop_failed = false;
 }
 std::string odb_worker_param::to_string()const {
     std::stringstream sstr;
@@ -45,9 +46,9 @@ void odb_worker_base::init(oi_database* db,
       ) {
         std::stringstream sstr;
         sstr << "invalid initialization parameter: " << prm.to_string().c_str()
-             << "  0 <= pool_size < " << MAX_POOL_SIZE
-             << "  0 <= commit_count < " << MAX_COMMIT_COUNT
-             << "  0 <= commit_timeout < " << MAX_COMMIT_TIMEOUT
+             << "  0 < pool_size < " << MAX_POOL_SIZE
+             << "  0 < commit_count < " << MAX_COMMIT_COUNT
+             << "  0 < commit_timeout < " << MAX_COMMIT_TIMEOUT
              << "  exception_handler != null ";
         throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
     }

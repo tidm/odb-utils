@@ -6,6 +6,8 @@ odb \
     -I/usr/share/include/odb/ -I/usr/include/boost169/ -I/usr/share/include/  \
     --odb-prologue '#include <type_traits/std_chrono_oracle.hpp>' \
     --hxx-prologue '#include <type_traits/std_chrono.hpp>' \
+    --odb-prologue '#include <cstddef>' \
+    --hxx-prologue '#include <cstddef>' \
     --database oracle \
     --generate-schema \
     --generate-query \
@@ -18,4 +20,3 @@ odb \
     $1
 }
 generate_odb req_agent.hpp
-generate_odb student.hpp 

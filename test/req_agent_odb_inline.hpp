@@ -59,6 +59,18 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (x);
     ODB_POTENTIALLY_UNUSED (e);
   }
+
+  // count_reg_agent
+  //
+
+  inline
+  void access::view_traits< ::count_reg_agent >::
+  callback (database& db, view_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
 }
 
 namespace odb
@@ -67,6 +79,9 @@ namespace odb
   //
 
   // ns2__reg_customer_obj
+  //
+
+  // count_reg_agent
   //
 }
 

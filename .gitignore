@@ -21,12 +21,12 @@ stamp-h1
 test/.deps/
 test/Makefile
 test/main.o
-test/req_agent.sql
-test/req_agent_odb.o
-test/test_odb_worker
 test/test_post_callback
-test/test_post_callback.log
-test/test_post_callback.trs
-test/test-suite.log
+test/.libs/
+test/blocking_mode
+test/blocking_small_tbs
+test/blocking_small_tbs_drop_failed
 
 
+test/*.log
+test/*.trs
