@@ -1,5 +1,5 @@
 AC_PREREQ([2.67])
-AC_INIT([liboi-odb-utils], [7.0.0], [oi@tidm.ir])
+AC_INIT([liboi-odb-utils], [7.0.1], [oi@tidm.ir])
 LT_INIT
 LT_LANG([C++])
 AC_LANG([C++])
@@ -22,7 +22,7 @@ AC_CONFIG_FILES([Makefile
                 test/Makefile
                 oi_odb_utils.pc])
 
-AC_SUBST([OI_ODB_UTILS_SO_VERSION], [7:0:0])
-AC_SUBST([OI_ODB_UTILS_API_VERSION], [7.0.0])
+AC_SUBST([OI_ODB_UTILS_SO_VERSION], [8:0:0])
+AC_SUBST([OI_ODB_UTILS_API_VERSION], [7.0.1])
 
 AC_OUTPUT

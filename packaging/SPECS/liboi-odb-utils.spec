@@ -1,6 +1,6 @@
 %define name liboi-odb-utils
-%define version 7.0.0
-%define release 1
+%define version 7.0.1
+%define release 2
 
 Name:           %{name}
 Version:        %{version}
@@ -76,5 +76,8 @@ rm -rf %{buildroot}
 %exclude %{_libdir}/*.so.*
 
 %changelog
+* Sat Dec 07 2019 Hessam Khoshniat <khoshniat@tidm.ir> 7.0-2
+- library version upgraded (release 2)
+
 * Sat Sep 29 2018 Soroush Rabiei <rabiei@tidm.ir> 7.0-1
 - Initial package for oi-odb-utils library (release 1)
