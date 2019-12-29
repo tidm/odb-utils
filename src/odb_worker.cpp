@@ -27,7 +27,7 @@ odb_worker_base::odb_worker_base() {
 void odb_worker_base::init(oi_database* db,
                            const odb_worker_param& prm,
                            std::function<void(oi::exception)>  handler
-                          ) throw(oi::exception) {
+                          ) {
     if(_state != state::NEW) {
         throw oi::exception(__FILE__, __FUNCTION__,
                             "invalid odb_worker_base state(re-initialization or initialization of a finalized worker)");
@@ -63,7 +63,7 @@ void odb_worker_base::init(oi_database* db,
         _worker_threads.emplace_back(&odb_worker_base::worker, this);
     }
 }
-odb_stat odb_worker_base::get_stat()throw() {
+odb_stat odb_worker_base::get_stat() noexcept {
     odb_stat temp;
     {
         std::lock_guard<std::mutex> m(_stat_gurad);
@@ -75,7 +75,7 @@ odb_stat odb_worker_base::get_stat()throw() {
 
 
 
-void odb_worker_base::finalize()throw() {
+void odb_worker_base::finalize() noexcept {
     if(_state == state::READY) {
         _state = state::TERMINATED;
         for(auto & th: _worker_threads) {
@@ -83,8 +83,6 @@ void odb_worker_base::finalize()throw() {
         }
     }
     _state = state::TERMINATED;
-}
-odb_worker_base::~odb_worker_base() {
 }
 
 /*

@@ -1,7 +1,11 @@
+// TODO: Needs cleanup
+
 #ifndef ODB_WORKER_HPP
 #define ODB_WORKER_HPP
+
 #include "odb_stat.hpp"
 #include "odb_headers.hpp"
+#include <cstddef>
 #include <sstream>
 #include <deque>
 #include <mutex>
@@ -19,14 +23,14 @@
 #define  MAX_COMMIT_COUNT  10000
 #define  MAX_QUE_SIZE  100000000
 
-
 namespace oi {
 struct odb_worker_param {
+    odb_worker_param();
     std::size_t max_que_size;
     int pool_size;
     int commit_count;
+    // TODO: Must be of type std::chrono::seconds
     int commit_timeout; // second
-    odb_worker_param();
     std::string to_string()const;
     bool blocking_mode;
     bool drop_failed;
@@ -35,7 +39,7 @@ std::ostream operator<<(std::ostream& os, const odb_worker_param& prm);
 
 class odb_worker_base {
     public:
-        enum class state {NEW, READY, TERMINATED};
+        enum class state : uint8_t {NEW, READY, TERMINATED};
     protected:
         std::atomic<state> _state;
         odb_worker_param _init_param;
@@ -56,14 +60,14 @@ class odb_worker_base {
         odb_worker_base& operator=(const odb_worker_base&); //is PRIVATE to avoid assigning - no body
     public:
         odb_worker_base();
+        virtual ~odb_worker_base() = default;
         virtual void init(oi_database* db,
                           const odb_worker_param& prm,
                           std::function<void(oi::exception)>  handler
-                         ) throw(oi::exception);
+                         );
         virtual void worker() = 0;
-        virtual odb_stat get_stat()throw();
-        void finalize()throw();
-        virtual ~odb_worker_base();
+        virtual odb_stat get_stat() noexcept;
+        void finalize() noexcept;
 
 };
 
@@ -73,11 +77,10 @@ class odb_worker: public odb_worker_base {
         std::function<void(oi::exception, const T& obj)> _local_exception_handler;
         std::function<void(const T&)>  _post_handler;
 
-
         void init(oi_database* db,
                   const odb_worker_param& prm,
                   std::function<void(oi::exception)>  handler
-                 ) throw(oi::exception) {
+                 ) {
             odb_worker_base::init(db, prm, handler);
         }
 
@@ -88,20 +91,20 @@ class odb_worker: public odb_worker_base {
                   std::function<void(oi::exception)>  handler,
                   std::function<void(const T&)> post_handler
 
-                 ) throw(oi::exception) {
+                 ) {
             _init_param = prm;
             _local_exception_handler  = local_handler;
             _post_handler = post_handler;
-//           _state = state::READY;
-//            for(int i=0; i< _init_param.pool_size; i++) {
-//                _worker_threads.emplace_back(&odb_worker_base::worker, this);
-//            }
+            //           _state = state::READY;
+            //            for(int i=0; i< _init_param.pool_size; i++) {
+            //                _worker_threads.emplace_back(&odb_worker_base::worker, this);
+            //            }
             odb_worker_base::init(db, prm, handler);
         }
 
 
-        odb_stat get_stat()throw() {
-            if(_state != odb_worker_base::state::READY){
+        odb_stat get_stat() noexcept {
+            if(_state != odb_worker_base::state::READY) {
                 return odb_stat();
             }
             odb_stat temp = odb_worker_base::get_stat();
@@ -111,36 +114,34 @@ class odb_worker: public odb_worker_base {
             }
             return temp;
         }
-        void persist(const T& obj)throw(oi::exception) {
+        void persist(const T& obj) {
             if(_state != state::READY) {
                 throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
             }
-            if(_init_param.blocking_mode){
+            if(_init_param.blocking_mode) {
                 _sem_full.wait();
             }
-            {
-                std::lock_guard<std::mutex> m{_que_gurad};
-                if(_que.size() >= _init_param.max_que_size ) {
-                    throw oi::exception(__FILE__, __FUNCTION__,
-                            (std::string("maximum queue size exceeded! max limit is ") + std::to_string(
-                                                                                                        _init_param.max_que_size)).c_str());
-                }
-                T* p = new T(obj);
-                _que.push_back(p);
+            std::unique_lock<std::mutex> lck{_que_gurad};
+            if(_que.size() >= _init_param.max_que_size ) {
+                throw oi::exception(__FILE__, __FUNCTION__,
+                                    (std::string("maximum queue size exceeded! max limit is ") + std::to_string(
+                                         _init_param.max_que_size)).c_str());
             }
+            T* p = new T(obj);
+            _que.push_back(p);
+            lck.unlock();
             _sem.notify();
         }
     private:
         std::deque<T*> _que;
-        bool reconnect(odb::core::transaction* & trans )
-        {
+        bool reconnect(odb::core::transaction*& trans ) {
             std::size_t q_size = 0;
             while(true)  {
                 std::cerr << "RECONNENCTING..." << std::endl;
                 std::unique_lock<std::mutex> m{_que_gurad};
                 q_size = _que.size();
                 m.unlock();
-                if(_state != state::READY && q_size == 0){
+                if(_state != state::READY && q_size == 0) {
                     break;
                 }
                 try {
@@ -148,8 +149,7 @@ class odb_worker: public odb_worker_base {
                         std::lock_guard<std::mutex> m{_stat_gurad};
                         _stat.update(0, execution_state::RECOVERING);
                     }
-                    if(trans != nullptr)
-                    {
+                    if(trans != nullptr) {
                         delete trans;
                     }
                     trans = nullptr;
@@ -165,13 +165,11 @@ class odb_worker: public odb_worker_base {
             if(_state != state::READY && q_size == 0) {
                 return false ;
             }
-            else{
+            else {
                 return true;
             }
-
         }
-        void do_persist(T * p)
-        {
+        void do_persist(T* p) {
             auto start = std::chrono::high_resolution_clock::now();
             _db->persist(*p);
             auto end = std::chrono::high_resolution_clock::now();
@@ -183,24 +181,22 @@ class odb_worker: public odb_worker_base {
         }
 
         bool do_commit(
-                std::chrono::high_resolution_clock::time_point & last_commit,
-                int & commit_counter,
-                odb::core::transaction* & trans,
-                std::vector<T*> & uncommited
-                )
-        {
+            std::chrono::high_resolution_clock::time_point& last_commit,
+            int& commit_counter,
+            odb::core::transaction*& trans,
+            std::vector<T*>& uncommited
+        ) {
             auto nw = std::chrono::high_resolution_clock::now();
             auto time_to_last_commit = std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count();
             bool r  = true;
             if(time_to_last_commit >= _init_param.commit_timeout || commit_counter >= _init_param.commit_count ) {
-                try{
+                try {
                     trans->commit();
                     for(auto i: uncommited) {
-                        if(_init_param.blocking_mode){
+                        if(_init_param.blocking_mode) {
                             _sem_full.notify();
                         }
-                        if(i != nullptr)
-                        {
+                        if(i != nullptr) {
                             delete i;
                         }
                     }
@@ -209,8 +205,7 @@ class odb_worker: public odb_worker_base {
                     last_commit = nw;
                     trans->reset(_db->begin());
                 }
-                catch(odb::exception& ox)
-                {
+                catch(odb::exception& ox) {
                     r = reconnect(trans);
                 }
             }
@@ -228,7 +223,6 @@ class odb_worker: public odb_worker_base {
                 int commit_counter = 0;
                 auto last_commit = std::chrono::high_resolution_clock::now();
                 auto last_shrink = std::chrono::high_resolution_clock::now();
-
                 bool persisted = true;
                 //start of main LOOP
                 while(true) {
@@ -238,14 +232,12 @@ class odb_worker: public odb_worker_base {
                     }
                     //check if a commit command should be executed
                     bool r = do_commit(last_commit, commit_counter, trans, uncommited);
-                    if(!r)
-                    {
+                    if(!r) {
                         break;
                     }
                     if(wait_res == false) {//there is no new object to store
                         continue;
                     }
-
                     auto nw = std::chrono::high_resolution_clock::now();
                     auto time_to_last_shrink = std::chrono::duration_cast<std::chrono::seconds>(nw - last_shrink).count();
                     //poping an object from the Q
@@ -254,13 +246,11 @@ class odb_worker: public odb_worker_base {
                     p2 = *p;
                     _que.pop_front();
                     //shrink the q to release memory
-                    if(time_to_last_shrink >= _init_param.commit_timeout)
-                    {
+                    if(time_to_last_shrink >= _init_param.commit_timeout) {
                         _que.shrink_to_fit();
                         last_shrink = std::chrono::high_resolution_clock::now();
                     }
                     m.unlock();
-
                     uncommited.push_back(p);
                     try {
                         do_persist(p);
@@ -271,25 +261,25 @@ class odb_worker: public odb_worker_base {
                         persisted = false;
                         oi::exception ox("odb", "exception" , e.what());
                         ox.add_msg(__FILE__, __FUNCTION__, " unable to persist type: % ", typeid(T).name());
-                        try{
+                        try {
                             if(_local_exception_handler && p != nullptr) {
                                 _local_exception_handler(ox, *p);
                             }
                             else {
                                 _exception_handler(ox );
                             }
-                        }catch(...){}
+                        }
+                        catch(...) {}
                         bool r = reconnect(trans);
                         if(!r) {
                             break;
                         }
-                        if(_init_param.drop_failed){
-                            if(_init_param.blocking_mode){
+                        if(_init_param.drop_failed) {
+                            if(_init_param.blocking_mode) {
                                 _sem_full.notify();
                             }
                             std::cerr << "DROPPED" << std::endl;
-                            if(p != nullptr)
-                            {
+                            if(p != nullptr) {
                                 delete p;
                             }
                             p = nullptr;
@@ -310,18 +300,15 @@ class odb_worker: public odb_worker_base {
                         uncommited.clear();
                     }
                     r = do_commit(last_commit, commit_counter, trans, uncommited);
-                    if(!r)
-                    {
+                    if(!r) {
                         break;
                     }
-                    if(_post_handler && persisted )
-                    {
-                        try
-                        {
+                    if(_post_handler && persisted ) {
+                        try {
                             _post_handler(p2);
                         }
-                        catch(...)
-                        {}
+                        catch(...) {
+                        }
                     }
                 }
                 try {
@@ -339,7 +326,7 @@ class odb_worker: public odb_worker_base {
             }
             catch(std::exception& ex) {
                 oi::exception ox(__FILE__, __FUNCTION__, "worker thread on type % terminated due to std::exception: %",
-                        typeid(T).name(), ex.what());
+                                 typeid(T).name(), ex.what());
                 if(_local_exception_handler && p != nullptr) {
                     _local_exception_handler(ox, *p );
                 }
@@ -349,7 +336,7 @@ class odb_worker: public odb_worker_base {
             }
             catch(...) {
                 oi::exception ox(__FILE__, __FUNCTION__, "worker thread on type % terminated due to an unknown exception",
-                        typeid(T).name());
+                                 typeid(T).name());
                 if(_local_exception_handler && p != nullptr) {
                     _local_exception_handler(ox,*p  );
                 }
@@ -358,9 +345,6 @@ class odb_worker: public odb_worker_base {
                 }
             }
         }
-
-    public:
-
 };
 
 

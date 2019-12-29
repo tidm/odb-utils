@@ -9,6 +9,7 @@
 #include <exception.hpp>
 #include <vector>
 #include <list>
+
 namespace oi {
 class odb_travers {
     public :
@@ -91,7 +92,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db,std::function<void(T&)> func) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -113,7 +114,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T> query,std::function<void(T&)> func ) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -136,7 +137,7 @@ class odb_travers {
         }
 
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T>& query,std::function<void(T&)> func ) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -158,7 +159,7 @@ class odb_travers {
             }
         }
         //-----------------------------------------------------------------------------------------------------------
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db,std::function<bool(T&)> func) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -182,7 +183,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T> query,std::function<bool(T&)> func ) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -207,7 +208,7 @@ class odb_travers {
         }
 
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T>& query,std::function<bool(T&)> func ) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -231,7 +232,7 @@ class odb_travers {
             }
         }
         //------------------------------------------------------------------------------
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db, std::function<void(T&)> func) {
             typedef odb::result<T> def_result;
             try {
@@ -247,7 +248,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db,  odb::query<T>& query,std::function<void(T&)> func ) {
             typedef odb::result<T> def_result;
             try {
@@ -263,7 +264,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db, std::function<bool(T&)> func) {
             typedef odb::result<T> def_result;
             try {
@@ -281,7 +282,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db,  odb::query<T> query,std::function<bool(T&)> func ) {
             typedef odb::result<T> def_result;
             try {
@@ -300,7 +301,7 @@ class odb_travers {
         }
 
 
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db, odb::query<T>& query,std::function<bool(T&)> func ) {
             typedef odb::result<T> def_result;
             try {
@@ -361,7 +362,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T> query,std::vector<T>& i_vec) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -383,7 +384,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T> query,std::list<T>& i_list) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -404,7 +405,7 @@ class odb_travers {
                 throw ox;
             }
         }
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T>& query, std::vector<T>& i_vec) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -425,7 +426,7 @@ class odb_travers {
                 throw ox;
             }
         }
-        template <typename T >
+        template <typename T>
         static void travers (odb::database* _db, odb::query<T>& query, std::list<T>& i_list) {
             typedef odb::result<T> def_result;
             if (_db == NULL) {
@@ -481,7 +482,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db, odb::query<T> query,std::vector<T>& i_vec) {
             typedef odb::result<T> def_result;
             try {
@@ -497,7 +498,7 @@ class odb_travers {
             }
         }
 
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db, odb::query<T> query,std::list<T>& i_list) {
             typedef odb::result<T> def_result;
             try {
@@ -512,7 +513,7 @@ class odb_travers {
                 throw ox;
             }
         }
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db, odb::query<T>& query, std::vector<T>& i_vec) {
             typedef odb::result<T> def_result;
             try {
@@ -527,7 +528,7 @@ class odb_travers {
                 throw ox;
             }
         }
-        template <typename T >
+        template <typename T>
         static void travers_ex (odb::database* _db,odb::query<T>& query, std::list<T>& i_list) {
             typedef odb::result<T> def_result;
             try {
