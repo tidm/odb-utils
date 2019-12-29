@@ -128,7 +128,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 liboi_odb_utils_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 am_liboi_odb_utils_la_OBJECTS = odb_stat.lo odb_worker.lo \
 	odb_async_worker.lo
 liboi_odb_utils_la_OBJECTS = $(am_liboi_odb_utils_la_OBJECTS)
@@ -271,8 +271,6 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-ODB_BOOST_CFLAGS = @ODB_BOOST_CFLAGS@
-ODB_BOOST_LIBS = @ODB_BOOST_LIBS@
 ODB_CFLAGS = @ODB_CFLAGS@
 ODB_LIBS = @ODB_LIBS@
 ODB_ORACLE_CFLAGS = @ODB_ORACLE_CFLAGS@
@@ -357,10 +355,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 AM_CPPFLAGS = \
-	--pedantic -Wall -Werror -Wno-unknown-pragmas -Wno-deprecated-declarations \
+	--pedantic -Wall -Werror -Wno-unknown-pragmas \
 	$(ODB_CFLAGS) \
 	$(ODB_ORACLE_CFLAGS) \
-	$(ODB_BOOST_CFLAGS) \
 	$(OI_COMMON_CFLAGS) \
 	$(OI_EXCEPTION_CFLAGS)
 
@@ -376,7 +373,6 @@ liboi_odb_utils_la_LDFLAGS = -version-info $(OI_ODB_UTILS_SO_VERSION)
 liboi_odb_utils_la_LIBADD = \
 	$(ODB_LIBS) \
 	$(ODB_ORACLE_LIBS) \
-	$(ODB_BOOST_LIBS) \
 	$(OI_COMMON_LIBS) \
 	$(OI_EXCEPTION_LIBS)
 
