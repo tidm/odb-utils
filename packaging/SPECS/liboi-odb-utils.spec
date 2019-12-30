@@ -74,7 +74,7 @@ rm -rf %{buildroot}
 %exclude %{_libdir}/*.so.*
 
 %changelog
-* Sun Dev 29 2019 Soroush Rabiei <rabiei@tidm.ir> 7.0-3
+* Sun Dec 29 2019 Soroush Rabiei <rabiei@tidm.ir> 7.0-3
 - Remove ODB Boost dependency (release 3)
 
 * Sat Dec 07 2019 Hessam Khoshniat <khoshniat@tidm.ir> 7.0-2
