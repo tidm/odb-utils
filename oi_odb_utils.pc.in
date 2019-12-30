@@ -6,7 +6,7 @@ includedir=@includedir@
 Name: @PACKAGE_NAME@
 Description: Type traits and common helpers for CodeSynthesis ODB
 Version: @PACKAGE_VERSION@
-Requires: libodb >= 2.4 libodb-oracle >= 2.4 libodb-boost >= 2.4
+Requires: libodb >= 2.4 libodb-oracle >= 2.4
 URL: @PACKAGE_URL@
 Libs: -L${libdir} -loi_odb_utils
 Cflags: -I${includedir}/oi/utils/odb_utils -I${includedir}/oi/utils/odb_utils/type_traits
