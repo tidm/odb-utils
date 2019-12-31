@@ -6,7 +6,6 @@
 #include "odb_stat.hpp"
 #include "odb_headers.hpp"
 #include <cstddef>
-#include <sstream>
 #include <deque>
 #include <mutex>
 #include <atomic>
@@ -14,8 +13,7 @@
 #include <functional>
 #include <chrono>
 #include <thread>
-#include <cstddef>
-#include <limits>
+#include <iostream>
 #include <exception.hpp>
 
 #define  MAX_POOL_SIZE  100
@@ -26,12 +24,12 @@
 namespace oi {
 struct odb_worker_param {
     odb_worker_param();
+    std::string to_string() const;
     std::size_t max_que_size;
     int pool_size;
     int commit_count;
     // TODO: Must be of type std::chrono::seconds
     int commit_timeout; // second
-    std::string to_string()const;
     bool blocking_mode;
     bool drop_failed;
 };
@@ -41,6 +39,7 @@ class odb_worker_base {
     public:
         enum class state : uint8_t {NEW, READY, TERMINATED};
     protected:
+        // TODO: is state able to be atomic?
         std::atomic<state> _state;
         odb_worker_param _init_param;
         oi_database* _db;
@@ -145,10 +144,9 @@ class odb_worker: public odb_worker_base {
                     break;
                 }
                 try {
-                    {
-                        std::lock_guard<std::mutex> m{_stat_gurad};
-                        _stat.update(0, execution_state::RECOVERING);
-                    }
+                    std::unique_lock<std::mutex> guard{_stat_gurad};
+                    _stat.update(0, execution_state::RECOVERING);
+                    guard.unlock();
                     if(trans != nullptr) {
                         delete trans;
                     }
@@ -169,23 +167,21 @@ class odb_worker: public odb_worker_base {
                 return true;
             }
         }
+
         void do_persist(T* p) {
-            auto start = std::chrono::high_resolution_clock::now();
+            auto start = std::chrono::steady_clock::now();
             _db->persist(*p);
-            auto end = std::chrono::high_resolution_clock::now();
+            auto end = std::chrono::steady_clock::now();
             uint64_t diff_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-            {
-                std::lock_guard<std::mutex> m{_stat_gurad};
-                _stat.update(diff_time, execution_state::SUCCESS);
-            }
+            std::lock_guard<std::mutex> guard{_stat_gurad};
+            _stat.update(diff_time, execution_state::SUCCESS);
         }
 
-        bool do_commit(
-            std::chrono::high_resolution_clock::time_point& last_commit,
-            int& commit_counter,
-            odb::core::transaction*& trans,
-            std::vector<T*>& uncommited
-        ) {
+        bool do_commit(std::chrono::high_resolution_clock::time_point& last_commit,
+                       int& commit_counter,
+                       odb::core::transaction*& trans,
+                       std::vector<T*>& uncommited) {
+            // TODO: API mush changed to use steady clock instead. Leaving unchanged for the sake of BC
             auto nw = std::chrono::high_resolution_clock::now();
             auto time_to_last_commit = std::chrono::duration_cast<std::chrono::seconds>(nw - last_commit).count();
             bool r  = true;
@@ -211,6 +207,7 @@ class odb_worker: public odb_worker_base {
             }
             return r;
         }
+
         void worker() {
             //   T obj;
             T* p = nullptr;
@@ -226,6 +223,7 @@ class odb_worker: public odb_worker_base {
                 bool persisted = true;
                 //start of main LOOP
                 while(true) {
+                    // TODO: 100 what? use std::chrono API instead
                     wait_res = _sem.wait_for(100);
                     if(_state != state::READY and wait_res == false) {//someone has called finalize()
                         break;
@@ -346,7 +344,6 @@ class odb_worker: public odb_worker_base {
             }
         }
 };
-
 
 }
 #endif

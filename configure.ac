@@ -16,6 +16,8 @@ PKG_CHECK_MODULES([ODB_ORACLE], [libodb-oracle >= 2.4])
 PKG_CHECK_MODULES([OI_COMMON], [oi_common >= 7.1])
 PKG_CHECK_MODULES([OI_EXCEPTION], [oi_exception >= 7.0])
 
+AX_PKG_CHECK_MODULES([FMT], [], [fmt >= 6.0])
+
 AC_CONFIG_FILES([Makefile
                 src/Makefile
                 test/Makefile

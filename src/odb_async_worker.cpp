@@ -1,13 +1,13 @@
 #include "odb_async_worker.hpp"
-namespace oi {
-odb_async_worker::odb_async_worker() {
-    _state= odb_worker_base::state::NEW;
-    _db = nullptr;
+
+oi::odb_async_worker::odb_async_worker():
+    _state{odb_worker_base::state::NEW},
+    _db{nullptr} {
 }
 
-void odb_async_worker::init(oi_database* db,
-                            const odb_worker_param& prm,
-                            std::function<void(oi::exception)>  handler) {
+void oi::odb_async_worker::init(oi_database* db,
+                                const odb_worker_param& prm,
+                                std::function<void(oi::exception)>  handler) {
     if(_state != odb_worker_base::state::NEW) {
         throw oi::exception(__FILE__, __FUNCTION__,
                             "invalid state(re-initialization or initialization of a finalized worker)");
@@ -24,21 +24,24 @@ void odb_async_worker::init(oi_database* db,
             prm.commit_timeout > MAX_COMMIT_TIMEOUT ||
             handler == nullptr
       ) {
-        std::stringstream sstr;
-        sstr << "invalid initialization parameter: " << prm.to_string().c_str()
-             << "  0 <= pool_size < " << MAX_POOL_SIZE
-             << "  0 <= commit_count < " << MAX_COMMIT_COUNT
-             << "  0 <= commit_timeout < " << MAX_COMMIT_TIMEOUT
-             << "  exception_handler != null ";
-        throw oi::exception(__FILE__, __FUNCTION__, sstr.str().c_str());
+        throw oi::exception(__FILE__, __FUNCTION__,
+                            "Invalid initialization parameter: {}\n"
+                            "0 <= pool_size < {}\n"
+                            "0 <= commit_count < {}\n"
+                            "0 <= commit_timeout < {}\n"
+                            "exception_handler != null\n"
+                            ,prm.to_string()
+                            ,MAX_POOL_SIZE
+                            ,MAX_COMMIT_COUNT
+                            ,MAX_COMMIT_TIMEOUT);
     }
-    _exception_handler  = handler;
+    _exception_handler = handler;
     _init_param = prm;
     _db = db;
     _state = odb_worker_base::state::READY;
 }
 
-odb_stat odb_async_worker::get_stat() noexcept {
+oi::odb_stat oi::odb_async_worker::get_stat() noexcept {
     if(_state != odb_worker_base::state::READY) {
         return odb_stat();
     }
@@ -56,7 +59,7 @@ odb_stat odb_async_worker::get_stat() noexcept {
     return aggr_st;
 }
 
-std::map<std::string,odb_stat> odb_async_worker::get_detailed_stat() noexcept {
+std::map<std::string, oi::odb_stat> oi::odb_async_worker::get_detailed_stat() noexcept {
     if(_state != odb_worker_base::state::READY) {
         return std::map<std::string,odb_stat>();
     }
@@ -71,7 +74,7 @@ std::map<std::string,odb_stat> odb_async_worker::get_detailed_stat() noexcept {
     return st;
 }
 
-void odb_async_worker::finalize() noexcept {
+void oi::odb_async_worker::finalize() noexcept {
     if(_state == odb_worker_base::state::READY) {
         std::map<std::string, odb_worker_base*>::iterator it;
         {
@@ -83,5 +86,4 @@ void odb_async_worker::finalize() noexcept {
         }
     }
     _state = odb_worker_base::state::TERMINATED;
-}
 }

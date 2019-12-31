@@ -4,7 +4,8 @@ AM_CPPFLAGS = \
 	$(ODB_CFLAGS) \
 	$(ODB_ORACLE_CFLAGS) \
 	$(OI_COMMON_CFLAGS) \
-	$(OI_EXCEPTION_CFLAGS)
+	$(OI_EXCEPTION_CFLAGS) \
+	$(FMT_CFLAGS)
 
 lib_LTLIBRARIES = liboi_odb_utils.la
 
@@ -21,7 +22,8 @@ liboi_odb_utils_la_LIBADD = \
 	$(ODB_LIBS) \
 	$(ODB_ORACLE_LIBS) \
 	$(OI_COMMON_LIBS) \
-	$(OI_EXCEPTION_LIBS)
+	$(OI_EXCEPTION_LIBS) \
+	$(FMT_LIBS)
 
 oi_odb_utils_includedir = $(includedir)/oi/utils/odb_utils/
 oi_odb_utils_include_HEADERS = \

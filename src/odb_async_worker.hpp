@@ -5,26 +5,19 @@
 namespace oi {
 
 class odb_async_worker {
-    private:
-        odb_worker_base::state _state;
-        std::map<std::string, odb_worker_base*> _workers;
-        std::mutex _workers_guard;
-        odb_worker_param _init_param;
-        oi_database* _db;
-        std::function<void(oi::exception)> _exception_handler;
-
-        odb_async_worker(const odb_async_worker&);//is PRIVATE to avoid pass by value - no body_base
-        odb_async_worker& operator=(const odb_async_worker&); //is PRIVATE to avoid assigning - no body
     public:
         odb_async_worker();
+        odb_async_worker(const odb_async_worker&) = delete;
+        odb_async_worker& operator=(const odb_async_worker&) = delete;
         void init(oi_database* db, const odb_worker_param& prm, std::function<void(oi::exception)>  handler );
         odb_stat get_stat() noexcept;
         std::map<std::string,odb_stat> get_detailed_stat() noexcept;
 
         template<typename T>
-        void set_local_handler(std::function<void(oi::exception, const T& obj)>  handler, std::function<void(const T& obj)> post_callback = nullptr) {
+        void set_local_handler(std::function<void(oi::exception, const T& obj)> handler,
+                               std::function<void(const T& obj)> post_callback = nullptr) {
             if(_state != odb_worker_base::state::READY) {
-                throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
+                throw oi::exception(__FILE__, __FUNCTION__, "Invalid use of un-initilized/finalized worker");
             }
             std::string t_name = typeid(T).name();
             std::map<std::string, odb_worker_base*>::iterator it;
@@ -38,14 +31,16 @@ class odb_async_worker {
                     _workers[t_name] = static_cast<odb_worker_base*>(wr);
                 }
                 else {
-                    throw oi::exception(__FILE__, __FUNCTION__, "unable to recreate channel! this method should be called before any `persist' invokation");
+                    throw oi::exception(__FILE__, __FUNCTION__,
+                                        "Unable to recreate channel! this method should be "
+                                        "called before any"" `persist' invokation");
                 }
             }
         }
         template<typename T>
         void persist(const T& obj) {
             if(_state != odb_worker_base::state::READY) {
-                throw oi::exception(__FILE__, __FUNCTION__, "invalid use of un-initilized/finalized worker");
+                throw oi::exception(__FILE__, __FUNCTION__, "Invalid use of un-initilized/finalized worker");
             }
             std::string t_name = typeid(T).name();
             std::map<std::string, odb_worker_base*>::iterator it;
@@ -66,7 +61,15 @@ class odb_async_worker {
         }
 
         void finalize() noexcept;
+    private:
+        odb_worker_base::state _state;
+        std::map<std::string, odb_worker_base*> _workers;
+        std::mutex _workers_guard;
+        odb_worker_param _init_param;
+        oi_database* _db;
+        std::function<void(oi::exception)> _exception_handler;
 };
 }
+
 #endif
 
